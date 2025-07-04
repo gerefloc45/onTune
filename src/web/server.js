@@ -20,7 +20,7 @@ class WebServer {
         });
         this.activeTunnels = [];
         this.tunnelProcesses = new Map();
-        
+
         this.setupMiddleware();
         this.setupRoutes();
         this.setupSocketHandlers();
@@ -70,7 +70,7 @@ class WebServer {
                 }
             });
         });
-        
+
         // API per metriche performance
         this.app.get('/api/metrics', (req, res) => {
             try {
@@ -83,7 +83,7 @@ class WebServer {
                 res.status(500).json({ success: false, error: error.message });
             }
         });
-        
+
         // API per report di salute
          this.app.get('/api/health', (req, res) => {
              try {
@@ -96,7 +96,7 @@ class WebServer {
                  res.status(500).json({ success: false, error: error.message });
              }
          });
-         
+
          // API per statistiche errori
          this.app.get('/api/errors', (req, res) => {
              try {
@@ -109,7 +109,7 @@ class WebServer {
                  res.status(500).json({ success: false, error: error.message });
              }
          });
-         
+
          // API per statistiche cache
          this.app.get('/api/cache', (req, res) => {
              try {
@@ -128,7 +128,7 @@ class WebServer {
             try {
                 const { guildId } = req.params;
                 const { tunnel } = req.query; // Parametro opzionale per forzare tunnel
-                
+
                 if (guildId) {
                     // Genera URL specifico per guild
                     const serverUrl = await this.bot.generatePublicDashboardLink(guildId, tunnel === 'true');
@@ -145,7 +145,7 @@ class WebServer {
                     // Genera URL base del server con opzione tunnel
                     const port = this.server.address()?.port || process.env.WEB_PORT || 3001;
                     let baseUrl, tunnelUsed = false;
-                    
+
                     // Se richiesto tunnel o IP pubblico non disponibile, usa servizi gratuiti
                     if (tunnel === 'true' || process.env.FORCE_TUNNEL === 'true') {
                         baseUrl = await this.createFreeTunnel(port);
@@ -153,7 +153,7 @@ class WebServer {
                     } else {
                         const publicIP = await this.bot.getPublicIP().catch(() => null);
                         const localIP = this.bot.getLocalIP();
-                        
+
                         if (publicIP && publicIP !== localIP) {
                             baseUrl = `http://${publicIP}:${port}`;
                         } else {
@@ -162,7 +162,7 @@ class WebServer {
                             tunnelUsed = true;
                         }
                     }
-                    
+
                     res.json({
                         success: true,
                         data: {
@@ -199,7 +199,7 @@ class WebServer {
                 const { provider } = req.body;
                 const port = this.server.address()?.port || process.env.WEB_PORT || 3001;
                 const tunnelUrl = await this.createFreeTunnel(port, provider);
-                
+
                 res.json({
                     success: true,
                     data: {
@@ -230,14 +230,14 @@ class WebServer {
                         userCount: channel.members.size
                     }))
             }));
-            
+
             res.json({ success: true, data: guilds });
         });
 
         this.app.get('/api/queue/:guildId', (req, res) => {
             const { guildId } = req.params;
             const queue = this.bot.musicManager ? this.bot.musicManager.getQueue(guildId) : null;
-            
+
             res.json({
                 success: true,
                 data: {
@@ -252,7 +252,7 @@ class WebServer {
         this.app.get('/api/guilds/:guildId/queue', (req, res) => {
             const { guildId } = req.params;
             const queue = this.bot.musicManager.getQueue(guildId);
-            
+
             res.json({
                 success: true,
                 data: {
@@ -264,7 +264,7 @@ class WebServer {
         this.app.get('/api/guilds/:guildId/nowplaying', (req, res) => {
             const { guildId } = req.params;
             const queue = this.bot.musicManager.getQueue(guildId);
-            
+
             res.json({
                 success: true,
                 data: {
@@ -276,12 +276,12 @@ class WebServer {
         this.app.post('/api/music/:guildId/play', async (req, res) => {
             const { guildId } = req.params;
             const { query, userId } = req.body;
-            
+
             try {
                 // Simula un messaggio per il comando play
                 const mockMessage = this.createMockMessage(guildId, userId);
                 await this.bot.musicManager.play(mockMessage, query);
-                
+
                 res.json({ success: true, message: 'Canzone aggiunta alla coda' });
             } catch (error) {
                 res.status(500).json({ success: false, error: error.message });
@@ -291,11 +291,11 @@ class WebServer {
         this.app.post('/api/music/:guildId/skip', async (req, res) => {
             const { guildId } = req.params;
             const { userId } = req.body;
-            
+
             try {
                 const mockMessage = this.createMockMessage(guildId, userId);
                 await this.bot.musicManager.skip(mockMessage);
-                
+
                 res.json({ success: true, message: 'Canzone saltata' });
             } catch (error) {
                 res.status(500).json({ success: false, error: error.message });
@@ -305,11 +305,11 @@ class WebServer {
         this.app.post('/api/music/:guildId/stop', async (req, res) => {
             const { guildId } = req.params;
             const { userId } = req.body;
-            
+
             try {
                 const mockMessage = this.createMockMessage(guildId, userId);
                 await this.bot.musicManager.stop(mockMessage);
-                
+
                 res.json({ success: true, message: 'Musica fermata' });
             } catch (error) {
                 res.status(500).json({ success: false, error: error.message });
@@ -319,11 +319,11 @@ class WebServer {
         this.app.post('/api/music/:guildId/volume', async (req, res) => {
             const { guildId } = req.params;
             const { volume, userId } = req.body;
-            
+
             try {
                 const mockMessage = this.createMockMessage(guildId, userId);
                 await this.bot.musicManager.setVolume(mockMessage, volume);
-                
+
                 res.json({ success: true, message: `Volume impostato al ${volume}%` });
             } catch (error) {
                 res.status(500).json({ success: false, error: error.message });
@@ -333,18 +333,18 @@ class WebServer {
         this.app.post('/api/voice/:guildId/join', async (req, res) => {
             const { guildId } = req.params;
             const { channelId, userId } = req.body;
-            
+
             try {
                 const guild = this.bot.client.guilds.cache.get(guildId);
                 const channel = guild.channels.cache.get(channelId);
-                
+
                 if (!channel || channel.type !== 2) {
                     return res.status(400).json({ success: false, error: 'Canale vocale non valido' });
                 }
 
                 const mockMessage = this.createMockMessage(guildId, userId, channel);
                 await this.bot.voiceManager.joinVoiceChannel(mockMessage);
-                
+
                 res.json({ success: true, message: `Entrato nel canale ${channel.name}` });
             } catch (error) {
                 res.status(500).json({ success: false, error: error.message });
@@ -354,11 +354,11 @@ class WebServer {
         this.app.post('/api/voice/:guildId/leave', async (req, res) => {
             const { guildId } = req.params;
             const { userId } = req.body;
-            
+
             try {
                 const mockMessage = this.createMockMessage(guildId, userId);
                 await this.bot.voiceManager.leaveVoiceChannel(mockMessage);
-                
+
                 res.json({ success: true, message: 'Uscito dal canale vocale' });
             } catch (error) {
                 res.status(500).json({ success: false, error: error.message });
@@ -368,11 +368,11 @@ class WebServer {
         this.app.post('/api/voice/:guildId/speak', async (req, res) => {
             const { guildId } = req.params;
             const { text, userId } = req.body;
-            
+
             try {
                 const mockMessage = this.createMockMessage(guildId, userId);
                 await this.bot.voiceManager.speakInVoice(mockMessage, text);
-                
+
                 res.json({ success: true, message: 'Messaggio pronunciato' });
             } catch (error) {
                 res.status(500).json({ success: false, error: error.message });
@@ -384,7 +384,7 @@ class WebServer {
             try {
                 const { guildId } = req.params;
                 const port = this.getPort() || process.env.WEB_PORT || 3000;
-                
+
                 if (guildId) {
                     // Genera URL specifico per la guild usando la funzione esistente
                     const dashboardUrl = this.bot.generatePublicDashboardLink(guildId);
@@ -401,11 +401,11 @@ class WebServer {
                     // Genera URL base del server
                     const publicIP = this.bot.publicIP;
                     const localIP = this.bot.localIP;
-                    
-                    const baseUrl = publicIP ? 
-                        `http://${publicIP}:${port}` : 
+
+                    const baseUrl = publicIP ?
+                        `http://${publicIP}:${port}` :
                         `http://${localIP}:${port}`;
-                    
+
                     res.json({
                         success: true,
                         data: {
@@ -429,11 +429,11 @@ class WebServer {
         this.app.get('/dashboard/:guildId', (req, res) => {
             const { guildId } = req.params;
             const guild = this.bot.client.guilds.cache.get(guildId);
-            
+
             if (!guild) {
                 return res.status(404).send('Server non trovato');
             }
-            
+
             res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
         });
 
@@ -441,11 +441,11 @@ class WebServer {
         this.app.get('/api/dashboard/:guildId/info', (req, res) => {
             const { guildId } = req.params;
             const guild = this.bot.client.guilds.cache.get(guildId);
-            
+
             if (!guild) {
                 return res.status(404).json({ success: false, error: 'Server non trovato' });
             }
-            
+
             const queue = this.bot.musicManager ? this.bot.musicManager.getQueue(guildId) : null;
             const voiceChannels = guild.channels.cache
                 .filter(channel => channel.type === 2)
@@ -459,7 +459,7 @@ class WebServer {
                         avatar: member.user.displayAvatarURL()
                     }))
                 }));
-            
+
             res.json({
                 success: true,
                 data: {
@@ -498,17 +498,17 @@ class WebServer {
         this.app.get('/api/dashboard/:guildId/stats', (req, res) => {
             const { guildId } = req.params;
             const guild = this.bot.client.guilds.cache.get(guildId);
-            
+
             if (!guild) {
                 return res.status(404).json({ success: false, error: 'Server non trovato' });
             }
-            
+
             // Calcola statistiche di base
             const textChannels = guild.channels.cache.filter(c => c.type === 0).size;
             const voiceChannels = guild.channels.cache.filter(c => c.type === 2).size;
             const categories = guild.channels.cache.filter(c => c.type === 4).size;
             const onlineMembers = guild.members.cache.filter(m => m.presence?.status !== 'offline').size;
-            
+
             res.json({
                 success: true,
                 data: {
@@ -629,7 +629,7 @@ class WebServer {
                 try {
                     const { guildId, command, args, userId } = data;
                     const mockMessage = this.createMockMessage(guildId, userId);
-                    
+
                     switch (command) {
                         case 'play':
                             await this.bot.musicManager.play(mockMessage, args.query);
@@ -647,7 +647,7 @@ class WebServer {
                             await this.bot.musicManager.resume(mockMessage);
                             break;
                     }
-                    
+
                     socket.emit('commandResult', { success: true, command });
                 } catch (error) {
                     socket.emit('commandResult', { success: false, error: error.message });
@@ -664,7 +664,7 @@ class WebServer {
     createMockMessage(guildId, userId, voiceChannel = null) {
         const guild = this.bot.client.guilds.cache.get(guildId);
         const user = this.bot.client.users.cache.get(userId) || { id: userId, username: 'WebUser' };
-        
+
         return {
             guild: guild,
             member: {
@@ -724,7 +724,7 @@ class WebServer {
     async start() {
         const port = process.env.WEB_PORT || 3000;
         const host = process.env.WEB_HOST || '0.0.0.0'; // Ascolta su tutte le interfacce
-        
+
         return new Promise(async (resolve, reject) => {
             this.server.listen(port, host, async (error) => {
                 if (error) {
@@ -743,7 +743,7 @@ class WebServer {
                         try {
                             const publicIP = await this.bot.getPublicIP().catch(() => null);
                             const localIP = this.bot.getLocalIP();
-                            
+
                             if (publicIP && publicIP !== localIP) {
                                 publicUrl = `http://${publicIP}:${port}`;
                             } else {
@@ -753,7 +753,7 @@ class WebServer {
                             publicUrl = `http://localhost:${port}`;
                         }
                     }
-                    
+
                     console.log(`🌐 Server web avviato su ${publicUrl}`);
                     console.log(`📱 Interfaccia web disponibile su tutte le interfacce di rete`);
                     if (publicUrl.includes('.loca.lt') || publicUrl.includes('.ngrok.io') || publicUrl.includes('.serveo.net')) {
@@ -762,7 +762,7 @@ class WebServer {
                     } else {
                         console.log(`🔗 Accesso: ${publicUrl}`);
                     }
-                    
+
                     // Invia l'URL del tunnel a tutti i client connessi
                     if (this.io) {
                         this.io.emit('tunnel-url', {
@@ -771,7 +771,7 @@ class WebServer {
                             localUrl: `http://localhost:${port}`
                         });
                     }
-                    
+
                     resolve();
                 }
             });
@@ -782,7 +782,7 @@ class WebServer {
         return new Promise(async (resolve) => {
             // Chiudi tutti i tunnel attivi
             await this.closeTunnels();
-            
+
             this.server.close(() => {
                 console.log('🌐 Server web fermato');
                 resolve();
@@ -801,7 +801,7 @@ class WebServer {
     // Metodi per gestire tunnel gratuiti
     async createFreeTunnel(port, preferredProvider = null) {
         const providers = preferredProvider ? [preferredProvider] : ['localtunnel', 'serveo'];
-        
+
         for (const provider of providers) {
             try {
                 const tunnelUrl = await this.createTunnelWithProvider(provider, port);
@@ -819,7 +819,7 @@ class WebServer {
                 continue;
             }
         }
-        
+
         // Fallback a IP locale se tutti i tunnel falliscono
         const localIP = this.bot.getLocalIP();
         return `http://${localIP}:${port}`;
@@ -841,7 +841,7 @@ class WebServer {
     async createLocalTunnel(port) {
         try {
             console.log(`🔗 Creazione tunnel LocalTunnel per porta ${port}...`);
-            
+
             return new Promise((resolve, reject) => {
                 // Usa il percorso completo di localtunnel
                 const ltPath = 'C:\\Users\\geremia\\AppData\\Roaming\\npm\\lt.cmd';
@@ -849,45 +849,45 @@ class WebServer {
                     stdio: ['pipe', 'pipe', 'pipe'],
                     shell: true
                 });
-                
+
                 let tunnelUrl = '';
                 let errorOutput = '';
-                
+
                 // Gestisci l'output del processo
                 ltProcess.stdout.on('data', (data) => {
                     const output = data.toString().trim();
                     console.log(`📡 LocalTunnel output: ${output}`);
-                    
+
                     // Cerca l'URL del tunnel nell'output
                     const urlMatch = output.match(/https:\/\/[a-z0-9-]+\.loca\.lt/);
                     if (urlMatch) {
                         tunnelUrl = urlMatch[0];
                         console.log(`✅ Tunnel LocalTunnel creato: ${tunnelUrl}`);
-                        
+
                         // Salva il processo del tunnel
                         this.tunnelProcesses.set('localtunnel', ltProcess);
-                        
+
                         resolve(tunnelUrl);
                     }
                 });
-                
+
                 ltProcess.stderr.on('data', (data) => {
                     errorOutput += data.toString();
                     console.error(`❌ LocalTunnel stderr: ${data.toString().trim()}`);
                 });
-                
+
                 ltProcess.on('close', (code) => {
                     if (code !== 0 && !tunnelUrl) {
                         console.error(`❌ LocalTunnel terminato con codice ${code}`);
                         reject(new Error(`LocalTunnel failed with code ${code}: ${errorOutput}`));
                     }
                 });
-                
+
                 ltProcess.on('error', (error) => {
                     console.error('❌ Errore avvio LocalTunnel:', error.message);
                     reject(error);
                 });
-                
+
                 // Timeout di 30 secondi
                 setTimeout(() => {
                     if (!tunnelUrl) {
@@ -896,7 +896,7 @@ class WebServer {
                     }
                 }, 30000);
             });
-            
+
         } catch (error) {
             console.error('❌ Errore creazione tunnel LocalTunnel:', error.message);
             throw error;
@@ -933,7 +933,7 @@ class WebServer {
     // Cleanup tunnel quando il server si chiude
     async closeTunnels() {
         console.log('🔗 Chiusura di tutti i tunnel...');
-        
+
         for (const [name, process] of this.tunnelProcesses) {
             try {
                 if (process && process.kill) {
@@ -944,7 +944,7 @@ class WebServer {
                 console.error(`❌ Errore chiusura tunnel ${name}:`, error.message);
             }
         }
-        
+
         this.tunnelProcesses.clear();
         console.log('🔗 Tutti i tunnel sono stati chiusi');
     }

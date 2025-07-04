@@ -9,13 +9,13 @@ function createLogger() {
     if (loggerInstance) {
         return loggerInstance;
     }
-    
+
     // Crea cartella logs se non esiste
     const logsDir = path.join(__dirname, '../../logs');
     if (!fs.existsSync(logsDir)) {
         fs.mkdirSync(logsDir, { recursive: true });
     }
-    
+
     loggerInstance = winston.createLogger({
     level: 'info',
     format: winston.format.combine(
@@ -57,7 +57,7 @@ function createLogger() {
     ],
      exitOnError: false
     });
-    
+
     return loggerInstance;
 }
 

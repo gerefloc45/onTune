@@ -49,7 +49,7 @@ class DiscordMusicAIBot {
         // Carica e valida configurazione
         this.config = getConfig();
         const validation = validateConfig();
-        
+
         if (!validation.valid) {
             logger.system('❌ Problemi di configurazione rilevati:');
             validation.issues.forEach(issue => logger.system(`  - ${issue}`));
@@ -57,9 +57,9 @@ class DiscordMusicAIBot {
                 throw new Error('Configurazione Discord non valida. Controlla il file .env');
             }
         }
-        
+
         logger.system('✅ Configurazione validata:', this.config.environment.nodeEnv);
-        
+
         this.client = new Client({
             intents: [
                 GatewayIntentBits.Guilds,
@@ -89,35 +89,35 @@ class DiscordMusicAIBot {
             BURST_LIMIT: performanceConfig.rate_limiting.burst_limit,
             COOLDOWN: performanceConfig.rate_limiting.cooldown_ms
         };
-        
+
         // Garbage Collection automatico
         if (global.gc && performanceConfig.memory.gc_interval) {
             setInterval(() => {
                 const memUsage = process.memoryUsage();
                 const heapUsed = memUsage.heapUsed / memUsage.heapTotal;
-                
+
                 if (heapUsed > performanceConfig.memory.heap_threshold) {
                     global.gc();
                     console.log(`🗑️ Garbage Collection eseguito - Heap: ${(heapUsed * 100).toFixed(1)}%`);
                 }
             }, performanceConfig.memory.gc_interval);
         }
-        
+
         // Performance optimizer
         this.performance = new PerformanceOptimizer();
-        
+
         // Inizializza monitoraggio
         this.monitor = getMonitor();
         logger.system('📊 Sistema di monitoraggio inizializzato');
-        
+
         // Inizializza cache
         this.caches = initializeBotCaches();
         logger.system('📦 Sistema di cache inizializzato');
-        
+
         // Inizializza gestione errori
         this.errorHandler = getErrorHandler();
         logger.system('🛡️ Sistema di gestione errori inizializzato');
-        
+
         // Inizializzazione lazy dei manager
         this.musicManager = null;
         this.voiceManager = null;
@@ -135,9 +135,9 @@ class DiscordMusicAIBot {
             logger.system(`🤖 Bot ${this.client.user.tag} è online!`);
             logger.music(`🎵 Sistema musicale attivo`);
             logger.voice(`🎤 Voice Manager attivo`);
-            
+
             this.client.user.setActivity('🎵 Musica e Voce | .help', { type: 'LISTENING' });
-            
+
             // Avvia automaticamente il server web per test
             try {
                 if (!this.webServer) {
@@ -154,7 +154,7 @@ class DiscordMusicAIBot {
 
         this.client.on('messageCreate', async (message) => {
             if (message.author.bot) return;
-            
+
             const prefix = process.env.BOT_PREFIX || '.';
             if (!message.content.startsWith(prefix)) {
                 return;
@@ -167,7 +167,7 @@ class DiscordMusicAIBot {
             if (!command) return;
 
             const startTime = Date.now();
-            
+
             try {
                  await this.handleCommand(message, command, args);
                  const responseTime = Date.now() - startTime;
@@ -206,7 +206,7 @@ class DiscordMusicAIBot {
         if (this.musicManager || this.musicManagerInitializing) {
             return this.musicManager;
         }
-        
+
         this.musicManagerInitializing = true;
         try {
             loadManagers();
@@ -218,24 +218,24 @@ class DiscordMusicAIBot {
         } finally {
             this.musicManagerInitializing = false;
         }
-        
+
         return this.musicManager;
     }
 
     async handleCommand(message, command, args) {
         const startTime = Date.now();
-        
+
         try {
             // Rate limiting per utente
             const userId = message.author.id;
             const now = Date.now();
             const userLimit = this.rateLimiter.get(userId);
-            
+
             if (userLimit && now - userLimit < 1000) { // 1 secondo di cooldown
                 return;
             }
             this.rateLimiter.set(userId, now);
-            
+
             // Pulizia periodica del rate limiter
             if (this.rateLimiter.size > 1000) {
                 const cutoff = now - 60000; // 1 minuto
@@ -243,17 +243,17 @@ class DiscordMusicAIBot {
                     if (time < cutoff) this.rateLimiter.delete(id);
                 }
             }
-            
+
             // Lazy loading dei manager quando necessario
             if (!this.musicManager && ['play', 'p', 'skip', 's', 'stop', 'pause', 'resume', 'queue', 'q', 'volume', 'v', 'loop', 'loopqueue', 'lq', 'shuffle', 'remove', 'rm', 'clear', 'nowplaying', 'np', 'jump', 'j'].includes(command)) {
                 await this.initializeMusicManager();
             }
-            
+
             if (!this.voiceManager && ['join', 'leave', 'speak', 'listen'].includes(command)) {
                 loadManagers();
                 this.voiceManager = new VoiceManager(this.client);
             }
-            
+
             switch (command) {
                 case 'help':
                     await this.sendHelpMessage(message);
@@ -363,7 +363,7 @@ class DiscordMusicAIBot {
 
         await message.reply({ embeds: [embed] });
     }
-    
+
     setupCommands() {
         // Setup per i comandi slash se necessario
         // Log rimosso per evitare duplicazione
@@ -414,7 +414,7 @@ class DiscordMusicAIBot {
     getLocalIP() {
         const { networkInterfaces } = require('os');
         const nets = networkInterfaces();
-        
+
         for (const name of Object.keys(nets)) {
             for (const net of nets[name]) {
                 // Salta indirizzi interni e non IPv4
@@ -457,25 +457,25 @@ class DiscordMusicAIBot {
     async generatePublicDashboardLink(guildId, forceTunnel = false) {
         try {
             const port = this.webServer.getPort();
-            
+
             // Se richiesto tunnel o variabile ambiente impostata, usa tunnel gratuito
             if (forceTunnel || process.env.FORCE_TUNNEL === 'true') {
                 const tunnelUrl = await this.webServer.createFreeTunnel(port);
                 return tunnelUrl;
             }
-            
+
             // Prova prima a ottenere l'IP pubblico
             const publicIP = await this.getPublicIP();
-            
+
             // Se abbiamo un IP pubblico valido, usalo
             if (publicIP && publicIP !== this.getLocalIP()) {
                 return `http://${publicIP}:${port}`;
             }
-            
+
             // Fallback a tunnel gratuito se IP pubblico non disponibile
             const tunnelUrl = await this.webServer.createFreeTunnel(port);
             return tunnelUrl;
-            
+
         } catch (error) {
             console.warn('Errore generazione link pubblico:', error.message);
             const localIP = this.getLocalIP();
@@ -499,11 +499,11 @@ class DiscordMusicAIBot {
             // Avvia il server se non è già attivo
             if (!this.webServer.isRunning()) {
                 await this.webServer.start();
-                
+
                 // Genera link specifico per questo server
                 const guildId = message.guild.id;
                 const serverUrl = await this.generatePublicDashboardLink(guildId);
-                
+
                 const { EmbedBuilder } = require('discord.js');
                 const embed = new EmbedBuilder()
                     .setTitle('🌐 Server Web Attivato!')
@@ -570,7 +570,7 @@ class DiscordMusicAIBot {
 
             const guildId = message.guild.id;
             const serverUrl = await this.generatePublicDashboardLink(guildId);
-            
+
             const { EmbedBuilder } = require('discord.js');
             const embed = new EmbedBuilder()
                 .setColor('#00ff00')
@@ -595,30 +595,30 @@ class DiscordMusicAIBot {
     async start() {
         try {
             logger.system('🚀 Avvio del bot in corso...');
-            
+
             // Verifica finale della configurazione
             if (!this.config.discord.token || this.config.discord.token === 'your_discord_bot_token_here') {
                 throw new Error('Token Discord non configurato. Copia .env.example in .env e configura le variabili.');
             }
-            
+
             await this.client.login(this.config.discord.token);
-            
+
             // Log informazioni di avvio
             logger.system('✅ Bot avviato con successo');
             logger.system(`📊 Ambiente: ${this.config.environment.nodeEnv}`);
             logger.system(`🌐 Porta web: ${this.config.web.port}`);
             logger.system(`📈 Monitoraggio: ${this.config.performance.monitoringEnabled ? 'Abilitato' : 'Disabilitato'}`);
-            
+
         } catch (error) {
             logger.system('❌ Errore durante l\'avvio del bot:', error.message);
-            
+
             // Suggerimenti per errori comuni
             if (error.message.includes('TOKEN_INVALID')) {
                 logger.system('💡 Suggerimento: Verifica che il token Discord sia corretto nel file .env');
             } else if (error.message.includes('ENOTFOUND')) {
                 logger.system('💡 Suggerimento: Verifica la connessione internet');
             }
-            
+
             process.exit(1);
         }
     }
@@ -629,16 +629,16 @@ class DiscordMusicAIBot {
             if (interaction.deferred || interaction.replied) {
                 return;
             }
-            
+
             // Per i pulsanti musicali, usiamo update per modificare il messaggio esistente
             const isMusicButton = interaction.customId.startsWith('music_');
-            
+
             if (isMusicButton) {
                 await interaction.deferUpdate();
             } else {
                 await interaction.deferReply();
             }
-            
+
             // Simula il messaggio per il music manager
             const fakeMessage = {
                 member: interaction.member,
@@ -721,9 +721,9 @@ class DiscordMusicAIBot {
                 // Interaction already acknowledged - già gestita, ignora
                 return;
             }
-            
+
             console.error('Errore gestione bottone:', error);
-            
+
             // Prova a rispondere solo se l'interazione non è stata ancora gestita
             try {
                 if (!interaction.replied && !interaction.deferred) {
@@ -739,31 +739,31 @@ class DiscordMusicAIBot {
     }
 
 
-    
+
     async shutdown() {
         try {
             console.log('🧹 Pulizia risorse in corso...');
-            
+
             // Distruggi MusicManager se inizializzato
             if (this.musicManager && typeof this.musicManager.destroy === 'function') {
                 this.musicManager.destroy();
             }
-            
+
             // Distruggi VoiceManager se inizializzato
             if (this.voiceManager && typeof this.voiceManager.destroy === 'function') {
                 this.voiceManager.destroy();
             }
-            
+
             // Ferma il server web se inizializzato
             if (this.webServer && typeof this.webServer.stop === 'function') {
                 await this.webServer.stop();
             }
-            
+
             // Disconnetti il client Discord
             if (this.client && this.client.isReady()) {
                 await this.client.destroy();
             }
-            
+
             console.log('✅ Shutdown completato');
         } catch (error) {
             console.error('❌ Errore durante shutdown:', error);

@@ -8,7 +8,7 @@ class ConfigValidator {
             'DISCORD_TOKEN',
             'DISCORD_CLIENT_ID'
         ];
-        
+
         this.optionalVars = {
             WEB_PORT: '3000',
             NODE_ENV: 'development',
@@ -24,7 +24,7 @@ class ConfigValidator {
             GC_INTERVAL_MINUTES: '5'
         };
     }
-    
+
     loadConfig() {
         // Carica file .env se esiste
         const envPath = path.join(__dirname, '../../.env');
@@ -34,37 +34,37 @@ class ConfigValidator {
         } else {
             logger.system('⚠️ File .env non trovato, usando variabili di sistema');
         }
-        
+
         // Valida variabili richieste
         const missingVars = this.validateRequired();
         if (missingVars.length > 0) {
             logger.system('❌ Variabili d\'ambiente mancanti:', missingVars);
             throw new Error(`Variabili d'ambiente mancanti: ${missingVars.join(', ')}`);
         }
-        
+
         // Imposta valori di default per variabili opzionali
         this.setDefaults();
-        
+
         // Valida e converte tipi
         this.validateAndConvert();
-        
+
         logger.system('✅ Configurazione validata e caricata');
-        
+
         return this.getConfig();
     }
-    
+
     validateRequired() {
         const missing = [];
-        
+
         for (const varName of this.requiredVars) {
             if (!process.env[varName]) {
                 missing.push(varName);
             }
         }
-        
+
         return missing;
     }
-    
+
     setDefaults() {
         for (const [varName, defaultValue] of Object.entries(this.optionalVars)) {
             if (!process.env[varName]) {
@@ -73,7 +73,7 @@ class ConfigValidator {
             }
         }
     }
-    
+
     validateAndConvert() {
         // Valida e converte WEB_PORT
         const port = parseInt(process.env.WEB_PORT);
@@ -81,28 +81,28 @@ class ConfigValidator {
             throw new Error(`WEB_PORT non valido: ${process.env.WEB_PORT}`);
         }
         process.env.WEB_PORT = port.toString();
-        
+
         // Valida NODE_ENV
         const validEnvs = ['development', 'production', 'test'];
         if (!validEnvs.includes(process.env.NODE_ENV)) {
             logger.system(`⚠️ NODE_ENV non valido: ${process.env.NODE_ENV}, usando 'development'`);
             process.env.NODE_ENV = 'development';
         }
-        
+
         // Valida LOG_LEVEL
         const validLogLevels = ['error', 'warn', 'info', 'debug'];
         if (!validLogLevels.includes(process.env.LOG_LEVEL)) {
             logger.system(`⚠️ LOG_LEVEL non valido: ${process.env.LOG_LEVEL}, usando 'info'`);
             process.env.LOG_LEVEL = 'info';
         }
-        
+
         // Converte valori booleani
         const booleanVars = ['LOG_FILE_ENABLED', 'PERFORMANCE_MONITORING'];
         for (const varName of booleanVars) {
             const value = process.env[varName].toLowerCase();
             process.env[varName] = (value === 'true' || value === '1').toString();
         }
-        
+
         // Valida valori numerici
         const numericVars = {
             METRICS_RETENTION_HOURS: { min: 1, max: 168 }, // 1 ora - 1 settimana
@@ -113,7 +113,7 @@ class ConfigValidator {
             MEMORY_THRESHOLD_PERCENT: { min: 50, max: 95 },
             GC_INTERVAL_MINUTES: { min: 1, max: 60 }
         };
-        
+
         for (const [varName, { min, max }] of Object.entries(numericVars)) {
             const value = parseInt(process.env[varName]);
             if (isNaN(value) || value < min || value > max) {
@@ -122,7 +122,7 @@ class ConfigValidator {
             }
         }
     }
-    
+
     getConfig() {
         return {
             discord: {
@@ -166,37 +166,37 @@ class ConfigValidator {
             }
         };
     }
-    
+
     // Metodo per verificare la configurazione in runtime
     validateRuntime() {
         const issues = [];
-        
+
         // Verifica token Discord
         if (!process.env.DISCORD_TOKEN || process.env.DISCORD_TOKEN === 'your_discord_bot_token_here') {
             issues.push('Token Discord non configurato correttamente');
         }
-        
+
         // Verifica configurazione Spotify se abilitata
         if (process.env.SPOTIFY_CLIENT_ID && !process.env.SPOTIFY_CLIENT_SECRET) {
             issues.push('Configurazione Spotify incompleta (manca CLIENT_SECRET)');
         }
-        
+
         // Verifica porta web
         const port = parseInt(process.env.WEB_PORT);
         if (port < 1024 && process.getuid && process.getuid() !== 0) {
             issues.push(`Porta ${port} richiede privilegi amministratore`);
         }
-        
+
         return {
             valid: issues.length === 0,
             issues: issues
         };
     }
-    
+
     // Metodo per ottenere informazioni di debug sulla configurazione
     getDebugInfo() {
         const config = this.getConfig();
-        
+
         // Rimuovi informazioni sensibili
         const debugConfig = JSON.parse(JSON.stringify(config));
         if (debugConfig.discord.token) {
@@ -208,7 +208,7 @@ class ConfigValidator {
         if (debugConfig.tunnel.ngrokAuthToken) {
             debugConfig.tunnel.ngrokAuthToken = '***';
         }
-        
+
         return debugConfig;
     }
 }
