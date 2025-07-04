@@ -10,8 +10,34 @@ const logger = require('../utils/logger');
 const fs = require('fs');
 const path = require('path');
 
-// Carica configurazione performance
-const performanceConfig = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'config', 'performance.json'), 'utf8'));
+// Carica configurazione performance con fallback
+let performanceConfig;
+try {
+    const configPath = path.join(__dirname, '..', '..', 'config', 'performance.json');
+    performanceConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    console.log('✅ Configurazione performance caricata da:', configPath);
+} catch (error) {
+    console.warn('⚠️ Impossibile caricare performance.json, uso configurazione di default:', error.message);
+    // Configurazione di fallback
+    performanceConfig = {
+        cache: {
+            search: { ttl: 900000 },
+            url: { ttl: 1800000 },
+            metadata: { ttl: 3600000 },
+            cleanup_interval: { value: 1800000 },
+            max_size: {
+                search: 1000,
+                url: 500,
+                metadata: 2000
+            }
+        },
+        connection_pool: {
+            max_connections: 10,
+            timeout_ms: 30000,
+            retry_attempts: 3
+        }
+    };
+}
 
 class MusicManager extends EventEmitter {
     constructor(client) {
