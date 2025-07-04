@@ -5,6 +5,7 @@ const cors = require('cors');
 const path = require('path');
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
+const os = require('os');
 
 class WebServer {
     constructor() {
@@ -73,14 +74,18 @@ class WebServer {
         this.app.get('/api/server-url', (req, res) => {
             try {
                 const port = this.getPort() || process.env.WEB_PORT || 3000;
-                const baseUrl = `http://localhost:${port}`;
+                const localIP = this.getLocalIPAddress();
+                const localUrl = `http://localhost:${port}`;
+                const networkUrl = localIP !== 'localhost' ? `http://${localIP}:${port}` : null;
 
                 res.json({
                     success: true,
                     data: {
                         type: 'server_base',
-                        url: baseUrl,
-                        port: port
+                        localUrl: localUrl,
+                        networkUrl: networkUrl,
+                        port: port,
+                        localIP: localIP
                     }
                 });
             } catch (error) {
@@ -136,6 +141,38 @@ class WebServer {
         }, 5000);
     }
 
+    getLocalIPAddress() {
+        const interfaces = os.networkInterfaces();
+        
+        // Priorità: WiFi, Ethernet, altre interfacce
+        const priorityOrder = ['Wi-Fi', 'WiFi', 'Wireless', 'Ethernet', 'eth0', 'wlan0'];
+        
+        // Prima cerca nelle interfacce prioritarie
+        for (const priority of priorityOrder) {
+            if (interfaces[priority]) {
+                for (const iface of interfaces[priority]) {
+                    if (iface.family === 'IPv4' && !iface.internal) {
+                        return iface.address;
+                    }
+                }
+            }
+        }
+        
+        // Se non trova nelle prioritarie, cerca in tutte le altre
+        for (const name of Object.keys(interfaces)) {
+            if (priorityOrder.includes(name)) continue;
+            
+            for (const iface of interfaces[name]) {
+                if (iface.family === 'IPv4' && !iface.internal) {
+                    return iface.address;
+                }
+            }
+        }
+        
+        // Fallback a localhost
+        return 'localhost';
+    }
+
     async start() {
         const port = process.env.WEB_PORT || 3000;
         const host = process.env.WEB_HOST || '0.0.0.0'; // Ascolta su tutte le interfacce
@@ -146,7 +183,8 @@ class WebServer {
                     console.error('❌ Errore nell\'avvio del server web:', error);
                     reject(error);
                 } else {
-                    // Determina l'URL basato sulla configurazione
+                    // Rileva automaticamente l'indirizzo IP locale
+                    const localIP = this.getLocalIPAddress();
                     let serverUrl = null;
 
                     // Se WEB_HOST è specificato e non è localhost/0.0.0.0, usa quello
@@ -154,19 +192,24 @@ class WebServer {
                         serverUrl = `http://${host}:${port}`;
                         console.log(`🌐 Server configurato per IP specifico: ${serverUrl}`);
                     } else {
-                        // Usa sempre localhost - tunnel rimosso
-                        serverUrl = `http://localhost:${port}`;
+                        // Usa l'IP locale rilevato automaticamente
+                        serverUrl = `http://${localIP}:${port}`;
                     }
 
                     console.log(`🌐 Server web avviato su ${serverUrl}`);
                     console.log(`📱 Interfaccia web disponibile`);
-                    console.log(`🔗 Accesso: ${serverUrl}`);
+                    console.log(`🔗 Accesso locale: http://localhost:${port}`);
+                    if (localIP !== 'localhost') {
+                        console.log(`🌍 Accesso rete: ${serverUrl}`);
+                    }
 
                     // Invia l'URL del server a tutti i client connessi
                     if (this.io) {
                         this.io.emit('server-url', {
                             url: serverUrl,
-                            isLocal: true
+                            localUrl: `http://localhost:${port}`,
+                            networkUrl: localIP !== 'localhost' ? serverUrl : null,
+                            isLocal: localIP === 'localhost'
                         });
                     }
 
