@@ -1,12 +1,14 @@
-# Discord Music Bot - Versione Ottimizzata 🚀
+# onTune - Discord Music Bot Ottimizzato 🚀
 
-Un bot Discord avanzato per la riproduzione musicale con ottimizzazioni delle performance, cache intelligente e monitoraggio in tempo reale.
+Un bot Discord avanzato per la riproduzione musicale con ottimizzazioni delle performance, cache intelligente, dashboard web e monitoraggio in tempo reale.
 
 ## ✨ Caratteristiche Principali
 
 - 🎵 **Riproduzione Multi-Piattaforma**: YouTube, SoundCloud e Spotify
-- 🔄 **Sistema Code Avanzato**: Loop, shuffle e gestione intelligente
+- 🔄 **Sistema Coda Avanzato**: Loop, shuffle e gestione intelligente
 - ⚡ **Comandi Slash**: Supporto completo Discord slash commands
+- 🌐 **Dashboard Web**: Interfaccia web per controllo remoto
+- 📊 **Monitoraggio Performance**: Statistiche in tempo reale
 
 ## 🚀 Ottimizzazioni Performance
 
@@ -54,9 +56,8 @@ Un bot Discord avanzato per la riproduzione musicale con ottimizzazioni delle pe
 ### Prerequisiti
 - Node.js 16+ installato
 - Account Discord Developer
-- Chiave API OpenAI (opzionale)
 - Account Spotify Developer (opzionale per supporto Spotify)
-- Account Google Cloud (opzionale per TTS/STT)
+- FFmpeg installato per la riproduzione audio
 
 ### 1. Clona e Installa
 ```bash
@@ -115,29 +116,18 @@ DISCORD_TOKEN=il_tuo_token_discord_qui
 CLIENT_ID=il_tuo_client_id_qui
 GUILD_ID=il_tuo_guild_id_qui
 
-# OpenAI Configuration (opzionale)
-OPENAI_API_KEY=la_tua_chiave_openai_qui
-
 # Spotify Configuration (opzionale)
 SPOTIFY_CLIENT_ID=il_tuo_spotify_client_id_qui
 SPOTIFY_CLIENT_SECRET=il_tuo_spotify_client_secret_qui
-
-# Google Cloud Configuration (opzionale)
-GOOGLE_APPLICATION_CREDENTIALS=percorso/alle/tue/credenziali-google.json
 
 # Web Server Configuration
 WEB_PORT=3000
 WEB_HOST=localhost
 
 # Bot Configuration
-BOT_PREFIX=!
+BOT_PREFIX=.
 DEFAULT_VOLUME=0.5
 MAX_QUEUE_SIZE=50
-
-# AI Configuration
-AI_MODEL=gpt-3.5-turbo
-AI_MAX_TOKENS=150
-AI_TEMPERATURE=0.7
 ```
 
 ### 4. Configurazione Spotify (Opzionale)
@@ -151,16 +141,7 @@ Per abilitare il supporto Spotify:
 
 **Nota**: I brani Spotify vengono automaticamente convertiti in equivalenti YouTube per la riproduzione.
 
-### 5. Configurazione Google Cloud (Opzionale)
 
-Per abilitare TTS e STT:
-
-1. Crea un progetto su [Google Cloud Console](https://console.cloud.google.com/)
-2. Abilita le API:
-   - Cloud Text-to-Speech API
-   - Cloud Speech-to-Text API
-3. Crea un account di servizio e scarica il file JSON delle credenziali
-4. Imposta il percorso nel file `.env`
 
 ## 🎮 Utilizzo
 
@@ -169,8 +150,7 @@ Per abilitare TTS e STT:
 Il bot è configurato per funzionare senza **Intents Privilegiati** per evitare errori iniziali:
 
 #### 🚫 Senza MessageContent Intent:
-- ❌ Comandi con prefisso (`!play`, `!help`) **NON FUNZIONANO**
-- ❌ Risposte AI limitate
+- ❌ Comandi con prefisso (`.play`, `.help`) **NON FUNZIONANO**
 - ✅ **Soluzione**: Usa i **Comandi Slash** (vedi sotto)
 
 #### ✅ Alternative Disponibili:
@@ -209,8 +189,7 @@ npm run dev
 - `/join` - Fai entrare il bot nel tuo canale vocale
 - `/leave` - Fai uscire il bot dal canale vocale
 
-#### 🧠 Comandi AI
-- `/ai <prompt>` - Chatta con l'intelligenza artificiale
+#### ℹ️ Comandi Informativi
 - `/help` - Mostra tutti i comandi disponibili
 
 ### 🔧 Comandi con Prefisso (Solo con Intents Privilegiati)
@@ -229,15 +208,11 @@ npm run dev
 - `!volume <0-100>` - Imposta il volume
 
 #### 🎤 Comandi Vocali
-- `!join` - Entra nel canale vocale
-- `!leave` - Esci dal canale vocale
-- `!speak <testo>` - Fai parlare il bot
-- `!listen` - Attiva/disattiva l'ascolto AI
+- `.join` - Entra nel canale vocale
+- `.leave` - Esci dal canale vocale
 
-#### 🧠 Comandi AI
-- `!ai <prompt>` - Chatta con l'AI
-- `@bot <messaggio>` - Menziona il bot per una risposta AI
-- `!help` - Mostra tutti i comandi
+#### ℹ️ Comandi Informativi
+- `.help` - Mostra tutti i comandi
 
 ### Pannello Web
 
@@ -247,18 +222,10 @@ Il pannello offre:
 - 📊 Monitoraggio stato del bot
 - 🎵 Controlli musicali completi
 - 🎤 Gestione canali vocali
-- 🧠 Chat AI integrata
 - 📋 Visualizzazione code in tempo reale
+- 📈 Statistiche performance
 
 ## 🔧 Configurazione Avanzata
-
-### Personalizzazione AI
-
-Puoi modificare il comportamento dell'AI editando il `systemPrompt` in `src/managers/AIManager.js`:
-
-```javascript
-this.systemPrompt = `Il tuo prompt personalizzato qui...`;
-```
 
 ### Aggiunta di Nuovi Comandi
 
@@ -273,18 +240,21 @@ Modifica `src/web/public/index.html` per personalizzare l'interfaccia web.
 ## 📁 Struttura del Progetto
 
 ```
-DiscordBot/
+onTune/
 ├── src/
 │   ├── bot.js                 # File principale del bot
+│   ├── commands/
+│   │   └── slashCommands.js   # Comandi slash Discord
 │   ├── managers/
 │   │   ├── MusicManager.js    # Gestione musica
-│   │   ├── AIManager.js       # Gestione AI
 │   │   └── VoiceManager.js    # Gestione voce
+│   ├── utils/
+│   │   ├── logger.js          # Sistema di logging
+│   │   └── performance.js     # Monitoraggio performance
 │   └── web/
 │       ├── server.js          # Server web
-│       └── public/
-│           └── index.html     # Interfaccia web
-├── temp/                      # File temporanei (auto-generata)
+│       └── public/            # File statici dashboard
+├── config/                    # File di configurazione
 ├── package.json
 ├── .env
 └── README.md
@@ -302,15 +272,10 @@ DiscordBot/
 - Controlla che FFmpeg sia installato correttamente
 - Assicurati che il canale vocale non sia pieno
 
-### AI non risponde
-- Verifica che la chiave OpenAI sia corretta e valida
-- Controlla i crediti disponibili nel tuo account OpenAI
-- Se non hai OpenAI, il bot userà risposte predefinite
-
-### Problemi TTS/STT
-- Verifica la configurazione Google Cloud
-- Controlla che le API siano abilitate
-- Assicurati che il file delle credenziali sia nel percorso corretto
+### Dashboard Web non accessibile
+- Verifica che il server web sia avviato (usa `.webon`)
+- Controlla che la porta 3000 non sia occupata
+- Assicurati che il firewall non blocchi la connessione
 
 ## 🔒 Sicurezza
 
