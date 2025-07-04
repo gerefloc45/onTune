@@ -731,26 +731,38 @@ class WebServer {
                     console.error('❌ Errore nell\'avvio del server web:', error);
                     reject(error);
                 } else {
-                    // Crea sempre un tunnel LocalTunnel per accesso immediato
+                    // Determina l'URL pubblico basato sulla configurazione
                     let publicUrl = null;
-                    try {
-                        console.log('🚀 Creazione tunnel LocalTunnel automatico...');
-                        publicUrl = await this.createLocalTunnel(port);
-                        console.log(`✅ Tunnel creato con successo: ${publicUrl}`);
-                    } catch (tunnelError) {
-                        console.warn('⚠️ Impossibile creare tunnel LocalTunnel:', tunnelError.message);
-                        // Fallback a IP pubblico se disponibile
-                        try {
-                            const publicIP = await this.bot.getPublicIP().catch(() => null);
-                            const localIP = this.bot.getLocalIP();
 
-                            if (publicIP && publicIP !== localIP) {
-                                publicUrl = `http://${publicIP}:${port}`;
-                            } else {
+                    // Se WEB_HOST è specificato e non è localhost/0.0.0.0, usa quello
+                    if (host && host !== '0.0.0.0' && host !== 'localhost' && host !== '127.0.0.1') {
+                        publicUrl = `http://${host}:${port}`;
+                        console.log(`🌐 Server configurato per IP specifico: ${publicUrl}`);
+                    } else {
+                        // Solo per sviluppo locale, crea tunnel automatico
+                        if (process.env.NODE_ENV !== 'production') {
+                            try {
+                                console.log('🚀 Creazione tunnel LocalTunnel automatico...');
+                                publicUrl = await this.createLocalTunnel(port);
+                                console.log(`✅ Tunnel creato con successo: ${publicUrl}`);
+                            } catch (tunnelError) {
+                                console.warn('⚠️ Impossibile creare tunnel LocalTunnel:', tunnelError.message);
                                 publicUrl = `http://localhost:${port}`;
                             }
-                        } catch (ipError) {
-                            publicUrl = `http://localhost:${port}`;
+                        } else {
+                            // In produzione, usa IP pubblico o locale
+                            try {
+                                const publicIP = await this.bot.getPublicIP().catch(() => null);
+                                const localIP = this.bot.getLocalIP();
+
+                                if (publicIP && publicIP !== localIP) {
+                                    publicUrl = `http://${publicIP}:${port}`;
+                                } else {
+                                    publicUrl = `http://localhost:${port}`;
+                                }
+                            } catch (ipError) {
+                                publicUrl = `http://localhost:${port}`;
+                            }
                         }
                     }
 
