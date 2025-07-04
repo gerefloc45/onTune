@@ -827,14 +827,17 @@ class WebServer {
                     return tunnelUrl;
                 }
             } catch (error) {
-                console.warn(`Errore con provider ${provider}:`, error.message);
+                console.warn(`⚠️ Errore con provider ${provider}:`, error.message);
+                if (provider === 'localtunnel') {
+                    console.log('💡 Per risolvere: npm install localtunnel');
+                }
                 continue;
             }
         }
 
-        // Fallback a IP locale se tutti i tunnel falliscono
-        const localIP = this.bot.getLocalIP();
-        return `http://${localIP}:${port}`;
+        // Fallback a localhost se tutti i tunnel falliscono
+        console.log('🔄 Tutti i tunnel falliti, usando localhost');
+        return `http://localhost:${port}`;
     }
 
     async createTunnelWithProvider(provider, port) {
@@ -855,9 +858,8 @@ class WebServer {
             console.log(`🔗 Creazione tunnel LocalTunnel per porta ${port}...`);
 
             return new Promise((resolve, reject) => {
-                // Usa il percorso completo di localtunnel
-                const ltPath = 'C:\\Users\\geremia\\AppData\\Roaming\\npm\\lt.cmd';
-                const ltProcess = spawn(ltPath, ['--port', port.toString()], {
+                // Usa npx per eseguire localtunnel senza percorso hardcoded
+                const ltProcess = spawn('npx', ['localtunnel', '--port', port.toString()], {
                     stdio: ['pipe', 'pipe', 'pipe'],
                     shell: true
                 });
@@ -897,6 +899,7 @@ class WebServer {
 
                 ltProcess.on('error', (error) => {
                     console.error('❌ Errore avvio LocalTunnel:', error.message);
+                    console.log('💡 Suggerimento: Installa localtunnel con "npm install localtunnel"');
                     reject(error);
                 });
 
