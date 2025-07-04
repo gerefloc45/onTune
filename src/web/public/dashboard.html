@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Server Discord</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .server-info {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .server-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: bold;
+        }
+
+        .server-details h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .server-stats {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-icon {
+            font-size: 1.8rem;
+        }
+
+        .music-controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .control-btn {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            border: none;
+            border-radius: 15px;
+            padding: 15px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+
+        .control-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .control-btn.secondary {
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+        }
+
+        .control-btn.danger {
+            background: linear-gradient(45deg, #ff4757, #c44569);
+        }
+
+        .volume-control {
+            margin: 20px 0;
+        }
+
+        .volume-slider {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: rgba(255,255,255,0.3);
+            outline: none;
+            margin: 10px 0;
+        }
+
+        .search-container {
+            margin: 20px 0;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 15px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            font-size: 1rem;
+            margin-bottom: 10px;
+        }
+
+        .search-input::placeholder {
+            color: rgba(255,255,255,0.7);
+        }
+
+        .queue-list {
+            max-height: 300px;
+            overflow-y: auto;
+            background: rgba(0,0,0,0.2);
+            border-radius: 15px;
+            padding: 15px;
+        }
+
+        .queue-item {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .song-info {
+            flex: 1;
+        }
+
+        .song-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .song-details {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #4ecdc4;
+            display: inline-block;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.offline {
+            background: #ff4757;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .voice-channels {
+            margin-top: 20px;
+        }
+
+        .channel-item {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-style: italic;
+            opacity: 0.7;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .music-controls {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .server-stats {
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="server-info">
+                <div class="server-icon" id="serverIcon">🎵</div>
+                <div class="server-details">
+                    <h1 id="serverName">Caricamento...</h1>
+                    <div class="status-indicator" id="botStatus"></div>
+                    <span id="botStatusText">Connessione in corso...</span>
+                </div>
+            </div>
+            <div class="server-stats">
+                <div class="stat-item">
+                    <div class="stat-number" id="memberCount">-</div>
+                    <div class="stat-label">Membri</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="channelCount">-</div>
+                    <div class="stat-label">Canali</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="queueLength">-</div>
+                    <div class="stat-label">Coda Musicale</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard-grid">
+            <!-- Controlli Musicali -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="card-icon">🎵</span>
+                    Controlli Musicali
+                </div>
+                <div class="music-controls">
+                    <button class="control-btn" onclick="musicControl('play')">▶️ Play</button>
+                    <button class="control-btn secondary" onclick="musicControl('pause')">⏸️ Pausa</button>
+                    <button class="control-btn secondary" onclick="musicControl('skip')">⏭️ Skip</button>
+                    <button class="control-btn danger" onclick="musicControl('stop')">⏹️ Stop</button>
+                    <button class="control-btn secondary" onclick="musicControl('loop')">🔁 Loop</button>
+                    <button class="control-btn secondary" onclick="musicControl('shuffle')">🔀 Shuffle</button>
+                </div>
+                
+                <div class="volume-control">
+                    <label>Volume: <span id="volumeValue">50</span>%</label>
+                    <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="50" onchange="setVolume(this.value)">
+                </div>
+                
+                <div class="search-container">
+                    <input type="text" class="search-input" id="searchInput" placeholder="Cerca una canzone...">
+                    <button class="control-btn" onclick="searchAndPlay()">🔍 Cerca e Riproduci</button>
+                </div>
+            </div>
+
+            <!-- Coda Musicale -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="card-icon">📋</span>
+                    Coda Musicale
+                </div>
+                <div class="queue-list" id="queueList">
+                    <div class="loading">Caricamento coda...</div>
+                </div>
+                <button class="control-btn danger" onclick="clearQueue()" style="margin-top: 15px; width: 100%;">🗑️ Svuota Coda</button>
+            </div>
+
+            <!-- Canali Vocali -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="card-icon">🎤</span>
+                    Canali Vocali
+                </div>
+                <div class="voice-channels" id="voiceChannels">
+                    <div class="loading">Caricamento canali...</div>
+                </div>
+                <div style="margin-top: 15px; display: flex; gap: 10px;">
+                    <button class="control-btn secondary" onclick="joinVoice()" style="flex: 1;">🔗 Entra</button>
+                    <button class="control-btn danger" onclick="leaveVoice()" style="flex: 1;">🚪 Esci</button>
+                </div>
+            </div>
+
+            <!-- Informazioni Canzone Corrente -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="card-icon">🎶</span>
+                    Riproduzione Corrente
+                </div>
+                <div id="currentSong">
+                    <div class="loading">Nessuna canzone in riproduzione</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const guildId = window.location.pathname.split('/').pop();
+        
+        // Connessione Socket.IO
+        socket.on('connect', () => {
+            console.log('Connesso al server');
+            loadDashboardData();
+        });
+
+        socket.on('disconnect', () => {
+            console.log('Disconnesso dal server');
+            updateBotStatus(false);
+        });
+
+        // Aggiornamenti in tempo reale
+        socket.on('queueUpdate', (data) => {
+            if (data.guildId === guildId) {
+                updateQueue(data.queue);
+                updateCurrentSong(data.currentSong);
+            }
+        });
+
+        socket.on('statusUpdate', (data) => {
+            updateBotStatus(data.online);
+        });
+
+        // Funzioni di controllo musicale
+        function musicControl(action) {
+            fetch(`/api/music/${action}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ guildId: guildId })
+            }).then(response => {
+                if (!response.ok) {
+                    console.error('Errore nel controllo musicale:', action);
+                }
+            });
+        }
+
+        function setVolume(volume) {
+            document.getElementById('volumeValue').textContent = volume;
+            fetch('/api/music/volume', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ guildId: guildId, volume: parseInt(volume) })
+            });
+        }
+
+        function searchAndPlay() {
+            const query = document.getElementById('searchInput').value.trim();
+            if (!query) return;
+            
+            fetch('/api/music/play', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ guildId: guildId, query: query })
+            }).then(() => {
+                document.getElementById('searchInput').value = '';
+            });
+        }
+
+        function clearQueue() {
+            fetch('/api/music/clear', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ guildId: guildId })
+            });
+        }
+
+        function joinVoice() {
+            fetch('/api/voice/join', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ guildId: guildId })
+            });
+        }
+
+        function leaveVoice() {
+            fetch('/api/voice/leave', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ guildId: guildId })
+            });
+        }
+
+        // Funzioni di aggiornamento UI
+        function loadDashboardData() {
+            // Carica informazioni del server
+            fetch(`/api/dashboard/${guildId}/info`)
+                .then(response => response.json())
+                .then(data => {
+                    updateServerInfo(data);
+                })
+                .catch(error => console.error('Errore caricamento dati:', error));
+        }
+
+        function updateServerInfo(data) {
+            if (data.guild) {
+                document.getElementById('serverName').textContent = data.guild.name;
+                document.getElementById('memberCount').textContent = data.guild.memberCount || 0;
+                document.getElementById('channelCount').textContent = data.guild.channelCount || 0;
+                
+                // Aggiorna icona server con prima lettera del nome
+                const firstLetter = data.guild.name.charAt(0).toUpperCase();
+                document.getElementById('serverIcon').textContent = firstLetter;
+            }
+            
+            if (data.music) {
+                updateQueue(data.music.queue || []);
+                updateCurrentSong(data.music.currentSong);
+                document.getElementById('queueLength').textContent = (data.music.queue || []).length;
+            }
+            
+            if (data.voiceChannels) {
+                updateVoiceChannels(data.voiceChannels);
+            }
+            
+            updateBotStatus(true);
+        }
+
+        function updateQueue(queue) {
+            const queueList = document.getElementById('queueList');
+            
+            if (!queue || queue.length === 0) {
+                queueList.innerHTML = '<div class="loading">Coda vuota</div>';
+                return;
+            }
+            
+            queueList.innerHTML = queue.map((song, index) => `
+                <div class="queue-item">
+                    <div class="song-info">
+                        <div class="song-title">${song.title || 'Titolo sconosciuto'}</div>
+                        <div class="song-details">${song.duration || 'Durata sconosciuta'} • ${song.requestedBy || 'Sconosciuto'}</div>
+                    </div>
+                    <button class="control-btn danger" onclick="removeSong(${index + 1})" style="padding: 5px 10px; font-size: 0.8rem;">❌</button>
+                </div>
+            `).join('');
+        }
+
+        function updateCurrentSong(song) {
+            const currentSongDiv = document.getElementById('currentSong');
+            
+            if (!song) {
+                currentSongDiv.innerHTML = '<div class="loading">Nessuna canzone in riproduzione</div>';
+                return;
+            }
+            
+            currentSongDiv.innerHTML = `
+                <div class="queue-item">
+                    <div class="song-info">
+                        <div class="song-title">🎵 ${song.title || 'Titolo sconosciuto'}</div>
+                        <div class="song-details">${song.duration || 'Durata sconosciuta'} • ${song.requestedBy || 'Sconosciuto'}</div>
+                        <div class="song-details">Piattaforma: ${song.platform || 'Sconosciuta'}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateVoiceChannels(channels) {
+            const voiceChannelsDiv = document.getElementById('voiceChannels');
+            
+            if (!channels || channels.length === 0) {
+                voiceChannelsDiv.innerHTML = '<div class="loading">Nessun canale vocale disponibile</div>';
+                return;
+            }
+            
+            voiceChannelsDiv.innerHTML = channels.map(channel => `
+                <div class="channel-item">
+                    <div>
+                        <div style="font-weight: bold;">${channel.name}</div>
+                        <div style="font-size: 0.9rem; opacity: 0.8;">${channel.members || 0} membri</div>
+                    </div>
+                    <div style="color: ${channel.connected ? '#4ecdc4' : '#ff4757'};">
+                        ${channel.connected ? '🔗 Connesso' : '⭕ Disconnesso'}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateBotStatus(online) {
+            const statusIndicator = document.getElementById('botStatus');
+            const statusText = document.getElementById('botStatusText');
+            
+            if (online) {
+                statusIndicator.className = 'status-indicator';
+                statusText.textContent = 'Bot Online';
+            } else {
+                statusIndicator.className = 'status-indicator offline';
+                statusText.textContent = 'Bot Offline';
+            }
+        }
+
+        function removeSong(position) {
+            fetch('/api/music/remove', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ guildId: guildId, position: position })
+            });
+        }
+
+        // Gestione input ricerca con Enter
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchAndPlay();
+            }
+        });
+
+        // Aggiornamento periodico dei dati
+        setInterval(() => {
+            if (socket.connected) {
+                loadDashboardData();
+            }
+        }, 30000); // Ogni 30 secondi
+    </script>
+</body>
+</html>

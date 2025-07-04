@@ -1,0 +1,52 @@
+{
+  "name": "aiontune",
+  "version": "1.0.0",
+  "description": "Discord bot per musica ottimizzato con cache intelligente, lazy loading e performance monitoring",
+  "main": "src/bot.js",
+  "scripts": {
+    "start": "node --expose-gc --max-old-space-size=512 src/bot.js",
+    "start:prod": "node --expose-gc --max-old-space-size=1024 --optimize-for-size src/bot.js",
+    "dev": "nodemon --expose-gc src/bot.js",
+    "web": "node src/web/server.js",
+    "setup": "node setup.js",
+    "test": "node -e \"console.log('Test del bot completato')\"",
+    "deploy-commands": "node deploy-commands.js",
+    "enable-intents": "node enable-privileged-intents.js",
+    "performance-test": "node --expose-gc --trace-gc src/bot.js",
+    "memory-profile": "node --inspect --expose-gc src/bot.js"
+  },
+  "dependencies": {
+    "@discordjs/voice": "^0.16.1",
+    "@distube/ytdl-core": "^4.16.12",
+    "cors": "^2.8.5",
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "fluent-ffmpeg": "^2.1.2",
+
+    "ngrok": "^5.0.0-beta.2",
+    "node-fetch": "^3.3.2",
+    "openai": "^4.20.1",
+    "opusscript": "^0.0.8",
+    "prism-media": "^1.3.5",
+    "scdl-core": "^1.1.0",
+    "socket.io": "^4.7.4",
+    "sodium-native": "^4.0.4",
+    "spotify-web-api-node": "^5.0.2",
+    "winston": "^3.17.0",
+    "youtube-sr": "^4.3.4"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "keywords": [
+    "discord",
+    "bot",
+    "music",
+    "ai",
+    "voice",
+    "web"
+  ],
+  "author": "Geremia",
+  "license": "MIT"
+}
