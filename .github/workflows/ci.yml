@@ -1,0 +1,306 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        node-version: [18.x, 20.x]
+        
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Create test environment
+      run: |
+        cp .env.example .env
+        mkdir -p logs
+        mkdir -p config
+        
+    - name: Run linting
+      run: npm run lint
+      
+    - name: Run tests
+      run: npm run test:ci
+      env:
+        NODE_ENV: test
+      
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results-${{ matrix.node-version }}-${{ matrix.os }}
+        path: |
+          test-results/
+          coverage/
+        retention-days: 30
+      
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      if: matrix.node-version == '18.x' && matrix.os == 'ubuntu-latest'
+      with:
+        file: ./coverage/lcov.info
+        flags: unittests
+        name: codecov-umbrella
+      
+    - name: Check configuration loading
+      run: |
+        node -e "
+          try {
+            const config = require('./src/utils/config');
+            console.log('✅ Configuration module loads successfully');
+          } catch (error) {
+            console.error('❌ Configuration module failed to load:', error.message);
+            process.exit(1);
+          }
+        "
+        
+    - name: Validate bot structure
+      run: |
+        node -e "
+          const fs = require('fs');
+          const path = require('path');
+          
+          const criticalFiles = [
+            'src/bot.js',
+            'src/utils/config.js',
+            'src/utils/logger.js',
+            'src/utils/cache.js',
+            'src/utils/monitoring.js',
+            'src/utils/errorHandler.js',
+            'src/web/server.js',
+            'package.json'
+          ];
+          
+          let missing = [];
+          for (const file of criticalFiles) {
+            if (!fs.existsSync(file)) {
+              missing.push(file);
+            }
+          }
+          
+          if (missing.length > 0) {
+            console.error('❌ Missing critical files:', missing);
+            process.exit(1);
+          } else {
+            console.log('✅ All critical files present');
+          }
+        "
+        
+    - name: Security audit
+      run: npm audit --audit-level=high
+      
+    - name: Check for outdated dependencies
+      run: npm outdated || true
+      
+  build:
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Create production build
+      run: |
+        # Simula build di produzione
+        mkdir -p dist
+        cp -r src dist/
+        cp package*.json dist/
+        cp .env.example dist/
+        cp -r config dist/ 2>/dev/null || true
+        
+    - name: Test production configuration
+      run: |
+        cd dist
+        npm ci --only=production
+        
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: production-build-${{ github.sha }}
+        path: dist/
+        retention-days: 7
+        
+  docker:
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Create Dockerfile
+      run: |
+        cat > Dockerfile << 'EOF'
+        FROM node:18-alpine
+        
+        # Install FFmpeg
+        RUN apk add --no-cache ffmpeg
+        
+        # Create app directory
+        WORKDIR /app
+        
+        # Copy package files
+        COPY package*.json ./
+        
+        # Install dependencies
+        RUN npm ci --only=production && npm cache clean --force
+        
+        # Copy source code
+        COPY src/ ./src/
+        COPY config/ ./config/
+        COPY .env.example ./
+        
+        # Create necessary directories
+        RUN mkdir -p logs cache
+        
+        # Create non-root user
+        RUN addgroup -g 1001 -S nodejs && \
+            adduser -S ontune -u 1001
+        
+        # Change ownership
+        RUN chown -R ontune:nodejs /app
+        USER ontune
+        
+        # Expose port
+        EXPOSE 3000
+        
+        # Health check
+        HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+          CMD node -e "require('http').get('http://localhost:3000/api/health', (res) => process.exit(res.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
+        
+        # Start the application
+        CMD ["npm", "start"]
+        EOF
+        
+    - name: Build Docker image
+      run: |
+        docker build -t ontune:latest .
+        docker tag ontune:latest ontune:${{ github.sha }}
+        
+    - name: Test Docker image
+      run: |
+        # Test che l'immagine si avvii correttamente
+        docker run --rm -d --name ontune-test \
+          -e DISCORD_TOKEN=test_token \
+          -e DISCORD_CLIENT_ID=test_client_id \
+          ontune:latest
+        
+        # Aspetta un po' e controlla se il container è ancora in esecuzione
+        sleep 10
+        
+        if docker ps | grep ontune-test; then
+          echo "✅ Docker container started successfully"
+          docker stop ontune-test
+        else
+          echo "❌ Docker container failed to start"
+          docker logs ontune-test
+          exit 1
+        fi
+        
+  performance:
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Performance test
+      run: |
+        # Test di caricamento moduli
+        time node -e "require('./src/bot.js')" || true
+        
+        # Test memoria iniziale
+        node --expose-gc -e "
+          const config = require('./src/utils/config');
+          const logger = require('./src/utils/logger');
+          const cache = require('./src/utils/cache');
+          const monitoring = require('./src/utils/monitoring');
+          const errorHandler = require('./src/utils/errorHandler');
+          
+          // Force GC
+          if (global.gc) global.gc();
+          
+          const memUsage = process.memoryUsage();
+          console.log('Memory usage after loading all modules:');
+          console.log('  RSS:', Math.round(memUsage.rss / 1024 / 1024), 'MB');
+          console.log('  Heap Used:', Math.round(memUsage.heapUsed / 1024 / 1024), 'MB');
+          console.log('  Heap Total:', Math.round(memUsage.heapTotal / 1024 / 1024), 'MB');
+          console.log('  External:', Math.round(memUsage.external / 1024 / 1024), 'MB');
+          
+          if (memUsage.rss > 200 * 1024 * 1024) {
+            console.warn('⚠️ High initial memory usage detected');
+          } else {
+            console.log('✅ Memory usage within acceptable limits');
+          }
+        "
+        
+    - name: Bundle size analysis
+      run: |
+        # Analizza dimensione dei file
+        echo "📊 File size analysis:"
+        find src -name "*.js" -exec wc -l {} + | sort -n
+        
+        echo "\n📦 Total source code size:"
+        find src -name "*.js" | xargs cat | wc -l
+        
+        echo "\n📋 Dependencies size:"
+        du -sh node_modules/ 2>/dev/null || echo "node_modules not found"
+        
+  notify:
+    runs-on: ubuntu-latest
+    needs: [test, build, performance]
+    if: always()
+    
+    steps:
+    - name: Notify results
+      run: |
+        if [ "${{ needs.test.result }}" == "success" ] && 
+           [ "${{ needs.build.result }}" == "success" ] && 
+           [ "${{ needs.performance.result }}" == "success" ]; then
+          echo "✅ All CI checks passed successfully!"
+        else
+          echo "❌ Some CI checks failed:"
+          echo "  Test: ${{ needs.test.result }}"
+          echo "  Build: ${{ needs.build.result }}"
+          echo "  Performance: ${{ needs.performance.result }}"
+        fi

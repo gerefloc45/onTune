@@ -5,9 +5,35 @@ const path = require('path');
 const { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus, VoiceConnectionStatus } = require('@discordjs/voice');
 const logger = require('./utils/logger');
 const PerformanceOptimizer = require('./utils/performance');
+const { getMonitor } = require('./utils/monitoring');
+const { getConfig, validateConfig } = require('./utils/config');
+const { initializeBotCaches } = require('./utils/cache');
+const { getErrorHandler, handleCommandError } = require('./utils/errorHandler');
 
-// Carica configurazione performance
-const performanceConfig = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'config', 'performance.json'), 'utf8'));
+// Carica configurazione performance con fallback
+let performanceConfig;
+try {
+    const configPath = path.join(__dirname, '..', 'config', 'performance.json');
+    if (fs.existsSync(configPath)) {
+        performanceConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        logger.system('✅ Configurazione performance caricata');
+    } else {
+        throw new Error('File configurazione non trovato');
+    }
+} catch (error) {
+    logger.system('⚠️ Usando configurazione performance di default:', error.message);
+    performanceConfig = {
+        discord: {
+            cache: { MessageManager: 50, ChannelManager: 200, GuildManager: 100, UserManager: 200 },
+            sweepers: {
+                messages: { interval: 300, lifetime: 1800 },
+                users: { interval: 3600, filter: '!bot' }
+            }
+        },
+        rate_limiting: { commands_per_minute: 10, burst_limit: 3, cooldown_ms: 2000 },
+        memory: { gc_interval: 300000, heap_threshold: 0.8 }
+    };
+}
 
 // Lazy loading per migliorare i tempi di avvio
 let MusicManager, VoiceManager, SlashCommands, WebServer;
@@ -20,6 +46,20 @@ const loadManagers = () => {
 
 class DiscordMusicAIBot {
     constructor() {
+        // Carica e valida configurazione
+        this.config = getConfig();
+        const validation = validateConfig();
+        
+        if (!validation.valid) {
+            logger.system('❌ Problemi di configurazione rilevati:');
+            validation.issues.forEach(issue => logger.system(`  - ${issue}`));
+            if (validation.issues.some(issue => issue.includes('Token Discord'))) {
+                throw new Error('Configurazione Discord non valida. Controlla il file .env');
+            }
+        }
+        
+        logger.system('✅ Configurazione validata:', this.config.environment.nodeEnv);
+        
         this.client = new Client({
             intents: [
                 GatewayIntentBits.Guilds,
@@ -65,6 +105,18 @@ class DiscordMusicAIBot {
         
         // Performance optimizer
         this.performance = new PerformanceOptimizer();
+        
+        // Inizializza monitoraggio
+        this.monitor = getMonitor();
+        logger.system('📊 Sistema di monitoraggio inizializzato');
+        
+        // Inizializza cache
+        this.caches = initializeBotCaches();
+        logger.system('📦 Sistema di cache inizializzato');
+        
+        // Inizializza gestione errori
+        this.errorHandler = getErrorHandler();
+        logger.system('🛡️ Sistema di gestione errori inizializzato');
         
         // Inizializzazione lazy dei manager
         this.musicManager = null;
@@ -114,7 +166,17 @@ class DiscordMusicAIBot {
             // Ottimizzazione: evita di processare comandi vuoti
             if (!command) return;
 
-            await this.handleCommand(message, command, args);
+            const startTime = Date.now();
+            
+            try {
+                 await this.handleCommand(message, command, args);
+                 const responseTime = Date.now() - startTime;
+                 this.monitor.recordCommand(command, responseTime, true);
+             } catch (error) {
+                 const responseTime = Date.now() - startTime;
+                 this.monitor.recordCommand(command, responseTime, false);
+                 await handleCommandError(error, message, command);
+             }
         });
 
         this.client.on('voiceStateUpdate', (oldState, newState) => {
@@ -532,9 +594,31 @@ class DiscordMusicAIBot {
 
     async start() {
         try {
-            await this.client.login(process.env.DISCORD_TOKEN);
+            logger.system('🚀 Avvio del bot in corso...');
+            
+            // Verifica finale della configurazione
+            if (!this.config.discord.token || this.config.discord.token === 'your_discord_bot_token_here') {
+                throw new Error('Token Discord non configurato. Copia .env.example in .env e configura le variabili.');
+            }
+            
+            await this.client.login(this.config.discord.token);
+            
+            // Log informazioni di avvio
+            logger.system('✅ Bot avviato con successo');
+            logger.system(`📊 Ambiente: ${this.config.environment.nodeEnv}`);
+            logger.system(`🌐 Porta web: ${this.config.web.port}`);
+            logger.system(`📈 Monitoraggio: ${this.config.performance.monitoringEnabled ? 'Abilitato' : 'Disabilitato'}`);
+            
         } catch (error) {
-            console.error('Errore nell\'avvio del bot:', error);
+            logger.system('❌ Errore durante l\'avvio del bot:', error.message);
+            
+            // Suggerimenti per errori comuni
+            if (error.message.includes('TOKEN_INVALID')) {
+                logger.system('💡 Suggerimento: Verifica che il token Discord sia corretto nel file .env');
+            } else if (error.message.includes('ENOTFOUND')) {
+                logger.system('💡 Suggerimento: Verifica la connessione internet');
+            }
+            
             process.exit(1);
         }
     }

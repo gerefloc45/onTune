@@ -4,6 +4,8 @@ const socketIo = require('socket.io');
 const cors = require('cors');
 const path = require('path');
 const { spawn } = require('child_process');
+const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
 
 class WebServer {
     constructor(bot) {
@@ -12,7 +14,7 @@ class WebServer {
         this.server = http.createServer(this.app);
         this.io = socketIo(this.server, {
             cors: {
-                origin: "*",
+                origin: process.env.NODE_ENV === 'production' ? process.env.ALLOWED_ORIGINS?.split(',') || [] : "*",
                 methods: ["GET", "POST"]
             }
         });
@@ -26,9 +28,33 @@ class WebServer {
     }
 
     setupMiddleware() {
+        // Middleware di sicurezza
+        this.app.use(helmet({
+            contentSecurityPolicy: false // Disabilitato per compatibilità con Socket.IO
+        }));
+
+        // Rate limiting
+        const limiter = rateLimit({
+            windowMs: 15 * 60 * 1000, // 15 minuti
+            max: 100, // limite di 100 richieste per IP
+            message: 'Troppe richieste da questo IP, riprova più tardi.',
+            standardHeaders: true,
+            legacyHeaders: false
+        });
+        this.app.use('/api/', limiter);
+
         this.app.use(cors());
         this.app.use(express.json());
         this.app.use(express.static(path.join(__dirname, 'public')));
+
+        // Middleware per gestione errori globale
+        this.app.use((err, req, res, next) => {
+            console.error('❌ Errore server web:', err);
+            res.status(500).json({
+                success: false,
+                error: process.env.NODE_ENV === 'production' ? 'Errore interno del server' : err.message
+            });
+        });
     }
 
     setupRoutes() {
@@ -44,6 +70,58 @@ class WebServer {
                 }
             });
         });
+        
+        // API per metriche performance
+        this.app.get('/api/metrics', (req, res) => {
+            try {
+                const { getMonitor } = require('../utils/monitoring');
+                const monitor = getMonitor();
+                const metrics = monitor.getMetrics();
+                res.json({ success: true, data: metrics });
+            } catch (error) {
+                console.error('❌ Errore API metrics:', error);
+                res.status(500).json({ success: false, error: error.message });
+            }
+        });
+        
+        // API per report di salute
+         this.app.get('/api/health', (req, res) => {
+             try {
+                 const { getMonitor } = require('../utils/monitoring');
+                 const monitor = getMonitor();
+                 const health = monitor.getHealthReport();
+                 res.json({ success: true, data: health });
+             } catch (error) {
+                 console.error('❌ Errore API health:', error);
+                 res.status(500).json({ success: false, error: error.message });
+             }
+         });
+         
+         // API per statistiche errori
+         this.app.get('/api/errors', (req, res) => {
+             try {
+                 const { getErrorHandler } = require('../utils/errorHandler');
+                 const errorHandler = getErrorHandler();
+                 const errorStats = errorHandler.getErrorStats();
+                 res.json({ success: true, data: errorStats });
+             } catch (error) {
+                 console.error('❌ Errore API errors:', error);
+                 res.status(500).json({ success: false, error: error.message });
+             }
+         });
+         
+         // API per statistiche cache
+         this.app.get('/api/cache', (req, res) => {
+             try {
+                 const { getCacheManager } = require('../utils/cache');
+                 const cacheManager = getCacheManager();
+                 const cacheStats = cacheManager.getAllStats();
+                 res.json({ success: true, data: cacheStats });
+             } catch (error) {
+                 console.error('❌ Errore API cache:', error);
+                 res.status(500).json({ success: false, error: error.message });
+             }
+         });
 
         // API per generare URL del server con tunnel gratuiti
         this.app.get('/api/server-url/:guildId?', async (req, res) => {

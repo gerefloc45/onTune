@@ -1,5 +1,6 @@
 const winston = require('winston');
 const path = require('path');
+const fs = require('fs');
 
 // Singleton pattern per prevenire duplicazione del logger
 let loggerInstance = null;
@@ -7,6 +8,12 @@ let loggerInstance = null;
 function createLogger() {
     if (loggerInstance) {
         return loggerInstance;
+    }
+    
+    // Crea cartella logs se non esiste
+    const logsDir = path.join(__dirname, '../../logs');
+    if (!fs.existsSync(logsDir)) {
+        fs.mkdirSync(logsDir, { recursive: true });
     }
     
     loggerInstance = winston.createLogger({
@@ -62,8 +69,12 @@ logger.music = (message, data = {}) => {
     logger.info(`[MUSIC] ${message}`, data);
 };
 
-logger.ai = (message, data = {}) => {
-    logger.info(`[AI] ${message}`, data);
+logger.web = (message, data = {}) => {
+    logger.info(`[WEB] ${message}`, data);
+};
+
+logger.performance = (message, data = {}) => {
+    logger.info(`[PERFORMANCE] ${message}`, data);
 };
 
 logger.voice = (message, data = {}) => {

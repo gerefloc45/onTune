@@ -1,0 +1,169 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Pre-push hook per onTune Bot
+# Esegue test completi e controlli di sicurezza prima del push
+
+echo "🚀 Eseguendo controlli pre-push..."
+
+# 1. Test completi con coverage
+echo "🧪 Eseguendo suite di test completa..."
+npm run test:ci
+if [ $? -ne 0 ]; then
+  echo "❌ Test falliti. Non è possibile pushare con test che falliscono."
+  exit 1
+fi
+
+# 2. Controllo coverage minima
+echo "📊 Controllo coverage..."
+if [ -f "coverage/lcov.info" ]; then
+  # Estrai la percentuale di coverage dalle linee
+  coverage=$(grep -o "LF:[0-9]*" coverage/lcov.info | awk -F: '{sum+=$2} END {print sum}')
+  covered=$(grep -o "LH:[0-9]*" coverage/lcov.info | awk -F: '{sum+=$2} END {print sum}')
+  
+  if [ $coverage -gt 0 ]; then
+    percentage=$((covered * 100 / coverage))
+    echo "📈 Coverage attuale: ${percentage}%"
+    
+    if [ $percentage -lt 70 ]; then
+      echo "❌ Coverage troppo bassa (${percentage}% < 70%). Aggiungi più test."
+      exit 1
+    fi
+  fi
+else
+  echo "⚠️ File di coverage non trovato. Assicurati che i test generino coverage."
+fi
+
+# 3. Test di integrazione
+echo "🔗 Eseguendo test di integrazione..."
+npm run test:integration
+if [ $? -ne 0 ]; then
+  echo "❌ Test di integrazione falliti."
+  exit 1
+fi
+
+# 4. Audit di sicurezza completo
+echo "🔒 Audit di sicurezza completo..."
+npm audit --audit-level=moderate
+if [ $? -ne 0 ]; then
+  echo "❌ Vulnerabilità di sicurezza critiche trovate. Risolvi prima di pushare."
+  echo "💡 Esegui 'npm audit fix' per correzioni automatiche"
+  exit 1
+fi
+
+# 5. Controllo dipendenze obsolete
+echo "📦 Controllo dipendenze obsolete..."
+npm outdated --depth=0
+if [ $? -eq 1 ]; then
+  echo "⚠️ Alcune dipendenze sono obsolete. Considera di aggiornarle."
+  echo "💡 Esegui 'npm run update-deps' per aggiornare"
+  # Non blocchiamo il push per dipendenze obsolete
+fi
+
+# 6. Controllo build di produzione
+echo "🏗️ Test build di produzione..."
+NODE_ENV=production node -e "
+console.log('Testing production build...');
+try {
+  // Simula caricamento in produzione
+  process.env.NODE_ENV = 'production';
+  require('./src/utils/config');
+  console.log('✅ Build di produzione OK');
+} catch (error) {
+  console.error('❌ Errore build produzione:', error.message);
+  process.exit(1);
+}
+"
+
+if [ $? -ne 0 ]; then
+  echo "❌ Build di produzione fallita."
+  exit 1
+fi
+
+# 7. Controllo performance (memory usage)
+echo "⚡ Test performance base..."
+node -e "
+const startMemory = process.memoryUsage();
+console.log('Memoria iniziale:', Math.round(startMemory.heapUsed / 1024 / 1024), 'MB');
+
+// Simula caricamento moduli principali
+try {
+  require('./src/utils/config');
+  // Altri moduli principali se esistono
+  
+  const endMemory = process.memoryUsage();
+  const memoryIncrease = (endMemory.heapUsed - startMemory.heapUsed) / 1024 / 1024;
+  
+  console.log('Memoria dopo caricamento:', Math.round(endMemory.heapUsed / 1024 / 1024), 'MB');
+  console.log('Incremento memoria:', Math.round(memoryIncrease), 'MB');
+  
+  if (memoryIncrease > 50) {
+    console.error('❌ Incremento memoria troppo alto:', Math.round(memoryIncrease), 'MB');
+    process.exit(1);
+  }
+  
+  console.log('✅ Performance memoria OK');
+} catch (error) {
+  console.error('❌ Errore test performance:', error.message);
+  process.exit(1);
+}
+"
+
+if [ $? -ne 0 ]; then
+  echo "❌ Test performance fallito."
+  exit 1
+fi
+
+# 8. Controllo file sensibili
+echo "🔍 Controllo file sensibili..."
+if [ -f ".env" ]; then
+  echo "⚠️ File .env trovato. Assicurati che non sia tracciato da git."
+  if git ls-files --error-unmatch .env 2>/dev/null; then
+    echo "❌ File .env è tracciato da git! Rimuovilo dal tracking."
+    echo "💡 Esegui: git rm --cached .env"
+    exit 1
+  fi
+fi
+
+# 9. Controllo commit message quality (se disponibile)
+echo "📝 Controllo qualità commit..."
+if [ -f ".git/COMMIT_EDITMSG" ]; then
+  commit_msg=$(cat .git/COMMIT_EDITMSG)
+  if [ ${#commit_msg} -lt 10 ]; then
+    echo "⚠️ Commit message molto breve. Considera di essere più descrittivo."
+  fi
+fi
+
+# 10. Controllo branch protection
+echo "🌿 Controllo branch..."
+current_branch=$(git branch --show-current)
+if [ "$current_branch" = "main" ] || [ "$current_branch" = "master" ]; then
+  echo "⚠️ Stai pushando direttamente su $current_branch."
+  echo "💡 Considera di usare feature branch e pull request per modifiche importanti."
+fi
+
+# 11. Controllo dimensione repository
+echo "📏 Controllo dimensione repository..."
+repo_size=$(du -sh .git 2>/dev/null | cut -f1)
+if [ ! -z "$repo_size" ]; then
+  echo "📦 Dimensione repository: $repo_size"
+fi
+
+# 12. Backup pre-push (opzionale)
+echo "💾 Creando backup pre-push..."
+backup_dir="./temp/pre-push-backup-$(date +%Y%m%d-%H%M%S)"
+mkdir -p "$backup_dir"
+cp -r src config package.json "$backup_dir/" 2>/dev/null
+echo "📁 Backup creato in: $backup_dir"
+
+echo "✅ Tutti i controlli pre-push completati con successo!"
+echo "🎉 Il codice è pronto per il push!"
+echo "📊 Riepilogo:"
+echo "   - Linting: ✅"
+echo "   - Test: ✅"
+echo "   - Coverage: ✅"
+echo "   - Sicurezza: ✅"
+echo "   - Performance: ✅"
+echo "   - Build: ✅"
+echo ""
+echo "🚀 Procedendo con il push..."

@@ -4,11 +4,15 @@ Un bot Discord avanzato per la riproduzione musicale con ottimizzazioni delle pe
 
 ## ✨ Caratteristiche Principali
 
-- 🎵 **Riproduzione Multi-Piattaforma**: YouTube, SoundCloud e Spotify
-- 🔄 **Sistema Coda Avanzato**: Loop, shuffle e gestione intelligente
-- ⚡ **Comandi Slash**: Supporto completo Discord slash commands
-- 🌐 **Dashboard Web**: Interfaccia web per controllo remoto
-- 📊 **Monitoraggio Performance**: Statistiche in tempo reale
+- 🎵 **Riproduzione Musicale Avanzata**: Supporto per YouTube, Spotify e altre piattaforme
+- 🎛️ **Controlli Completi**: Play, pause, skip, queue, shuffle, loop e controllo volume
+- 🌐 **Dashboard Web**: Interfaccia web moderna per controllo remoto con API REST
+- 📊 **Monitoraggio Performance**: Metriche in tempo reale, cache intelligente e ottimizzazioni automatiche
+- 🛡️ **Gestione Errori Avanzata**: Sistema di retry automatico e classificazione errori
+- 🔒 **Sicurezza Integrata**: Rate limiting, validazione input e headers di sicurezza
+- 📈 **Sistema di Cache**: Cache multi-livello con TTL e LRU eviction
+- 🎯 **Comandi Intuitivi**: Sistema di comandi semplice e user-friendly
+- 🔧 **Altamente Configurabile**: Configurazione centralizzata con validazione e fallback
 
 ## 🚀 Ottimizzazioni Performance
 
@@ -51,18 +55,48 @@ Un bot Discord avanzato per la riproduzione musicale con ottimizzazioni delle pe
 - Cache hit rate
 - Connessioni attive
 
-## 🚀 Installazione
+## 🚀 Installazione Rapida
 
 ### Prerequisiti
-- Node.js 16+ installato
-- Account Discord Developer
-- Account Spotify Developer (opzionale per supporto Spotify)
-- FFmpeg installato per la riproduzione audio
+- Node.js 18.0.0 o superiore
+- npm o yarn
+- FFmpeg installato nel sistema
+- Token bot Discord
 
-### 1. Clona e Installa
+### Setup
+
 ```bash
-cd DiscordBot
+# Clona il repository
+git clone <repository-url>
+cd onTune
+
+# Installa le dipendenze
 npm install
+
+# Configura le variabili d'ambiente
+cp .env.example .env
+# Modifica .env con i tuoi token e configurazioni
+
+# Avvia il bot
+npm start
+```
+
+### Configurazione Avanzata
+
+Il bot supporta configurazione avanzata tramite variabili d'ambiente:
+
+```env
+# Obbligatori
+DISCORD_TOKEN=your_discord_bot_token
+DISCORD_CLIENT_ID=your_discord_client_id
+
+# Opzionali
+WEB_PORT=3000
+NODE_ENV=development
+LOG_LEVEL=info
+PERFORMANCE_MONITORING=true
+CACHE_TTL_MINUTES=15
+RATE_LIMIT_MAX_REQUESTS=100
 ```
 
 ## 🚀 Avvio Rapido
@@ -214,68 +248,156 @@ npm run dev
 #### ℹ️ Comandi Informativi
 - `.help` - Mostra tutti i comandi
 
-### Pannello Web
+## 📊 Dashboard Web & API
 
-Accedi al pannello web su: `http://localhost:3000`
+Il bot include una dashboard web completa e API REST:
 
-Il pannello offre:
-- 📊 Monitoraggio stato del bot
-- 🎵 Controlli musicali completi
-- 🎤 Gestione canali vocali
-- 📋 Visualizzazione code in tempo reale
-- 📈 Statistiche performance
+### Dashboard Features
+- **Controllo Remoto**: Gestisci la musica da qualsiasi dispositivo
+- **Visualizzazione Queue**: Vedi e modifica la coda di riproduzione
+- **Metriche Real-time**: Monitora performance, memoria e cache
+- **Gestione Errori**: Visualizza statistiche errori e health status
+- **Sicurezza**: Rate limiting e headers di sicurezza integrati
 
-## 🔧 Configurazione Avanzata
+### API Endpoints
 
-### Aggiunta di Nuovi Comandi
+```bash
+# Stato bot e server
+GET /api/status
+GET /api/health
 
-1. Aggiungi il comando in `src/bot.js` nella funzione `handleCommand`
-2. Implementa la logica nel manager appropriato
-3. Aggiorna il messaggio di help
+# Metriche e monitoring
+GET /api/metrics
+GET /api/cache
+GET /api/errors
 
-### Personalizzazione Interfaccia Web
+# Controllo musica
+GET /api/queue
+POST /api/play
+POST /api/skip
+```
 
-Modifica `src/web/public/index.html` per personalizzare l'interfaccia web.
+### Accesso Dashboard
 
-## 📁 Struttura del Progetto
+1. Avvia il bot
+2. Usa il comando `.weblink` per ottenere l'URL
+3. Apri l'URL nel browser (default: http://localhost:3000)
+4. Controlla il bot da remoto!
+
+## 🔧 Configurazione
+
+### Sistema di Configurazione
+
+Il bot utilizza un sistema di configurazione centralizzato con validazione automatica:
+
+- **Validazione**: Controllo automatico di tutte le variabili
+- **Fallback**: Valori di default per configurazioni mancanti
+- **Sicurezza**: Validazione range e formati
+- **Debug**: Informazioni di configurazione (senza dati sensibili)
+
+### File di Configurazione
+
+- `config/performance.json` - Impostazioni cache, memoria e performance
+- `.env` - Variabili d'ambiente (copia da `.env.example`)
+
+### Configurazioni Avanzate
+
+```json
+// config/performance.json
+{
+  "cache": {
+    "search": { "ttl": 900000, "max_size": 1000 },
+    "metadata": { "ttl": 3600000, "max_size": 2000 }
+  },
+  "rate_limiting": {
+    "commands_per_minute": 10,
+    "burst_limit": 3
+  },
+  "monitoring": {
+    "enabled": true,
+    "metrics_retention_hours": 24
+  }
+}
+```
+
+## 📁 Struttura Progetto
 
 ```
 onTune/
 ├── src/
-│   ├── bot.js                 # File principale del bot
-│   ├── commands/
-│   │   └── slashCommands.js   # Comandi slash Discord
+│   ├── bot.js                 # Bot principale
 │   ├── managers/
 │   │   ├── MusicManager.js    # Gestione musica
-│   │   └── VoiceManager.js    # Gestione voce
+│   │   ├── VoiceManager.js    # Gestione voce
+│   │   └── WebManager.js      # Gestione web
 │   ├── utils/
-│   │   ├── logger.js          # Sistema di logging
-│   │   └── performance.js     # Monitoraggio performance
+│   │   ├── logger.js          # Sistema logging avanzato
+│   │   ├── cache.js           # Sistema cache intelligente
+│   │   ├── monitoring.js      # Monitoraggio performance
+│   │   ├── errorHandler.js    # Gestione errori centralizzata
+│   │   ├── config.js          # Configurazione e validazione
+│   │   └── performance.js     # Ottimizzazioni
 │   └── web/
-│       ├── server.js          # Server web
+│       ├── server.js          # Server web con sicurezza
 │       └── public/            # File statici dashboard
-├── config/                    # File di configurazione
+├── config/
+│   └── performance.json       # Configurazioni performance
+├── logs/                      # Log e crash reports
+├── .env.example              # Template configurazione
+├── DEVELOPMENT.md            # Guida sviluppatori
 ├── package.json
-├── .env
 └── README.md
 ```
 
 ## 🛠️ Risoluzione Problemi
 
-### Bot non si connette
-- Verifica che il token Discord sia corretto
-- Controlla che il bot abbia i permessi necessari nel server
-- Assicurati che tutte le dipendenze siano installate
+### Sistema di Diagnostica Integrato
 
-### Musica non funziona
-- Verifica che il bot abbia i permessi per entrare e parlare nei canali vocali
-- Controlla che FFmpeg sia installato correttamente
-- Assicurati che il canale vocale non sia pieno
+Il bot include sistemi avanzati per diagnosticare e risolvere problemi:
 
-### Dashboard Web non accessibile
-- Verifica che il server web sia avviato (usa `.webon`)
-- Controlla che la porta 3000 non sia occupata
-- Assicurati che il firewall non blocchi la connessione
+- **Health Check**: `GET /api/health` per stato sistema
+- **Error Tracking**: Classificazione automatica errori
+- **Performance Monitoring**: Metriche in tempo reale
+- **Crash Reports**: Salvataggio automatico crash per debug
+
+### Problemi Comuni
+
+#### Bot Non Si Avvia
+```bash
+# Verifica configurazione
+node -e "console.log(require('./src/utils/config').getConfig())"
+
+# Controlla token Discord
+echo $DISCORD_TOKEN
+
+# Verifica dipendenze
+npm audit
+```
+
+#### Dashboard Web Non Accessibile
+1. **Verifica porta**: `netstat -an | grep :3000`
+2. **Controlla firewall**: Potrebbe bloccare connessioni
+3. **Verifica configurazione**: `curl http://localhost:3000/api/health`
+4. **Log errori**: Controlla `logs/error.log`
+
+#### Problemi Performance
+1. **Memoria**: Monitora via `/api/metrics`
+2. **Cache**: Verifica hit rate via `/api/cache`
+3. **Errori**: Controlla rate via `/api/errors`
+4. **GC**: Configurabile via `GC_INTERVAL_MINUTES`
+
+### Debug Avanzato
+
+```bash
+# Log dettagliati
+LOG_LEVEL=debug npm start
+
+# Profiling memoria
+node --inspect src/index.js
+
+# Crash reports
+ls -la logs/crashes/
+```
 
 ## 🔒 Sicurezza
 
@@ -288,22 +410,60 @@ onTune/
 
 MIT License - Vedi il file LICENSE per i dettagli.
 
-## 🤝 Contributi
+## 🤝 Contribuire
 
-I contributi sono benvenuti! Sentiti libero di:
-- Segnalare bug
-- Suggerire nuove funzionalità
-- Inviare pull request
+I contributi sono benvenuti! Per contribuire:
 
-## 📞 Supporto
+1. Leggi la [Guida Sviluppatori](DEVELOPMENT.md)
+2. Fai un fork del progetto
+3. Crea un branch per la tua feature (`git checkout -b feature/AmazingFeature`)
+4. Segui le best practices documentate
+5. Testa le modifiche con `npm test`
+6. Committa con messaggi descrittivi (`git commit -m 'feat(music): add shuffle command'`)
+7. Pusha al branch (`git push origin feature/AmazingFeature`)
+8. Apri una Pull Request
 
-Per supporto o domande:
-- Apri un issue su GitHub
-- Controlla la documentazione
-- Verifica i log del bot per errori specifici
+### Convenzioni Sviluppo
+
+- **Codice**: Segui le best practices in `DEVELOPMENT.md`
+- **Commit**: Usa conventional commits (`type(scope): description`)
+- **Testing**: Testa sempre le modifiche
+- **Documentazione**: Aggiorna documentazione se necessario
+
+## 📚 Documentazione
+
+- **[README.md](README.md)** - Guida utente e installazione
+- **[DEVELOPMENT.md](DEVELOPMENT.md)** - Guida completa sviluppatori
+- **[API Documentation](src/web/README.md)** - Documentazione API REST
+
+## 📄 Licenza
+
+Questo progetto è distribuito sotto licenza MIT. Vedi `LICENSE` per maggiori informazioni.
+
+## 🆘 Supporto
+
+Se hai problemi o domande:
+
+1. **Diagnostica automatica**: Controlla `/api/health` per stato sistema
+2. **Documentazione**: Leggi [DEVELOPMENT.md](DEVELOPMENT.md) per troubleshooting avanzato
+3. **Issues esistenti**: Cerca nelle [Issues](../../issues) esistenti
+4. **Nuova Issue**: Apri una [Issue](../../issues/new) con:
+   - Log errori (`logs/error.log`)
+   - Output `/api/health`
+   - Configurazione (senza token)
+   - Passi per riprodurre il problema
+
+### Canali di Supporto
+
+- 🐛 **Bug Reports**: [GitHub Issues](../../issues)
+- 💡 **Feature Requests**: [GitHub Discussions](../../discussions)
+- 📖 **Documentazione**: [Wiki](../../wiki)
+- 💬 **Community**: [Discord Server](#) (se disponibile)
 
 ---
 
 **Creato da Geremia** 🚀
+
+**Nota**: Questo bot utilizza architettura moderna con sistemi avanzati di monitoraggio, cache e gestione errori. Consulta `DEVELOPMENT.md` per dettagli tecnici completi!
 
 *Buon divertimento con il tuo bot musicale AI!* 🎵🤖

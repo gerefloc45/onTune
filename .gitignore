@@ -173,3 +173,70 @@ ecosystem.config.js
 Dockerfile
 docker-compose.yml
 .dockerignore
+
+# onTune specific files
+config/settings.json
+logs/
+cache/
+temp/
+*.log
+
+# Backup files
+backups/
+*.backup
+
+# Temporary files
+temp/
+tmp/
+*.tmp
+
+# Database files (se utilizzati)
+*.db
+*.sqlite
+*.sqlite3
+
+# Audio files temporanei
+*.mp3
+*.wav
+*.ogg
+*.m4a
+*.webm
+
+# Crash dumps
+*.dmp
+crash-*.json
+
+# Performance profiles
+*.cpuprofile
+*.heapprofile
+*.heapsnapshot
+
+# Discord bot specifici
+token.txt
+config.json
+settings.json
+
+# FFmpeg binaries (se inclusi)
+ffmpeg*
+ffprobe*
+
+# SSL certificates
+*.pem
+*.key
+*.crt
+*.cert
+
+# Local development
+dev-config/
+local-config/
+test-data/
+
+# Archive files
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# Documentation builds
+docs/build/
+docs/_build/
