@@ -1,13 +1,13 @@
 {
-  "name": "aiontune",
+  "name": "tune",
   "version": "1.0.0",
   "description": "Discord bot per musica ottimizzato con cache intelligente, lazy loading e performance monitoring",
   "main": "src/bot.js",
   "scripts": {
     "start": "node --expose-gc --max-old-space-size=512 src/bot.js",
     "start:prod": "node --expose-gc --max-old-space-size=1024 --optimize-for-size src/bot.js",
-    "dev": "NODE_ENV=development LOG_LEVEL=debug nodemon --expose-gc src/bot.js",
-    "web": "node src/web/server.js",
+    "dev": "nodemon --expose-gc src/bot.js",
+    "web": "node web-server.js",
     "setup": "node setup.js",
     "deploy-commands": "node deploy-commands.js",
     "enable-intents": "node enable-privileged-intents.js",
@@ -36,7 +36,6 @@
     "helmet": "^7.1.0",
     "compression": "^1.7.4",
     "fluent-ffmpeg": "^2.1.2",
-    "ngrok": "^5.0.0-beta.2",
     "node-cron": "^3.0.3",
     "node-fetch": "^3.3.2",
     "opusscript": "^0.0.8",
@@ -50,8 +49,7 @@
     "youtube-sr": "^4.3.4"
   },
   "devDependencies": {
-    "nodemon": "^3.0.2",
-    "localtunnel": "^2.0.2"
+    "nodemon": "^3.0.2"
   },
   "keywords": [
     "discord",
@@ -65,6 +63,6 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Geremia95/aiontune.git"
+    "url": "https://github.com/Geremia95/tune.git"
   }
 }

@@ -9,6 +9,7 @@ const { getMonitor } = require('./utils/monitoring');
 const { getConfig, validateConfig } = require('./utils/config');
 const { initializeBotCaches } = require('./utils/cache');
 const { getErrorHandler, handleCommandError } = require('./utils/errorHandler');
+const StandaloneWebServer = require('../web-server');
 
 // Carica configurazione performance con fallback
 let performanceConfig;
@@ -36,12 +37,12 @@ try {
 }
 
 // Lazy loading per migliorare i tempi di avvio
-let MusicManager, VoiceManager, SlashCommands, WebServer;
+let MusicManager, VoiceManager, SlashCommands;
 const loadManagers = () => {
     if (!MusicManager) MusicManager = require('./managers/MusicManager');
     if (!VoiceManager) VoiceManager = require('./managers/VoiceManager');
     if (!SlashCommands) SlashCommands = require('./commands/slashCommands');
-    if (!WebServer) WebServer = require('./web/server');
+    // WebServer rimosso - ora standalone
 };
 
 class DiscordMusicAIBot {
@@ -123,33 +124,26 @@ class DiscordMusicAIBot {
         this.voiceManager = null;
         this.musicManagerInitializing = false;
         this.slashCommands = null;
-        this.webServer = null;
+        
+        // Inizializza server web standalone
+        this.webServer = new StandaloneWebServer();
+        this.webServer.start().catch(error => {
+            logger.system('⚠️ Errore avvio server web:', error.message);
+        });
 
         this.setupEventHandlers();
         this.setupCommands();
-        this.initializeWebServer();
     }
 
     setupEventHandlers() {
         this.client.once('ready', async () => {
-            logger.system(`🤖 Bot ${this.client.user.tag} è online!`);
+            logger.system(`🤖 Bot TUNE è online!`);
             logger.music(`🎵 Sistema musicale attivo`);
             logger.voice(`🎤 Voice Manager attivo`);
 
             this.client.user.setActivity('🎵 Musica e Voce | .help', { type: 'LISTENING' });
 
-            // Avvia automaticamente il server web per test
-            try {
-                if (!this.webServer) {
-                    await this.initializeWebServer();
-                }
-                if (!this.webServer.isRunning()) {
-                    await this.webServer.start();
-                    logger.system('🌐 Server web avviato automaticamente per test API');
-                }
-            } catch (error) {
-                logger.error('Errore avvio automatico server web:', error);
-            }
+            // Server web ora standalone - non più gestito dal bot
         });
 
         this.client.on('messageCreate', async (message) => {
@@ -308,15 +302,7 @@ class DiscordMusicAIBot {
                 case 'j':
                     await this.musicManager.jumpToSong(message, args[0]);
                     break;
-                case 'webon':
-                    await this.handleWebOn(message);
-                    break;
-                case 'weboff':
-                    await this.handleWebOff(message);
-                    break;
-                case 'weblink':
-                    await this.handleWebLink(message);
-                    break;
+                // Comandi web rimossi - server ora standalone
 
                 default:
                     message.reply('❌ Comando non riconosciuto. Usa `.help` per vedere tutti i comandi.');
@@ -351,11 +337,7 @@ class DiscordMusicAIBot {
                     value: '`.loop` - Loop canzone corrente\n`.loopqueue` - Loop intera coda\n`.shuffle` - Attiva/disattiva shuffle\n`.nowplaying` - Mostra canzone corrente\n`.remove <numero>` - Rimuovi canzone dalla coda\n`.clear` - Svuota la coda\n`.jump <numero>` - Salta a una canzone specifica',
                     inline: false
                 },
-                {
-                    name: '🌐 **Comandi Web Dashboard**',
-                    value: '`.webon` - Attiva server web e dashboard\n`.weboff` - Spegni server web\n`.weblink` - Ottieni link dashboard',
-                    inline: false
-                },
+
 
             )
             .setFooter({ text: 'Bot creato da Gerefloc45 - Versione Ottimizzata' })
@@ -400,197 +382,9 @@ class DiscordMusicAIBot {
         };
     }
 
-    async initializeWebServer() {
-        try {
-            loadManagers();
-            this.webServer = new WebServer(this);
-            // Non avviamo automaticamente il server web
-            logger.system('🌐 Server web pronto per l\'avvio');
-        } catch (error) {
-            logger.error('Errore inizializzazione WebServer:', error);
-        }
-    }
+    // Metodi del server web rimossi - ora standalone
 
-    getLocalIP() {
-        const { networkInterfaces } = require('os');
-        const nets = networkInterfaces();
-
-        for (const name of Object.keys(nets)) {
-            for (const net of nets[name]) {
-                // Salta indirizzi interni e non IPv4
-                if (net.family === 'IPv4' && !net.internal) {
-                    return net.address;
-                }
-            }
-        }
-        return 'localhost'; // Fallback
-    }
-
-    async getPublicIP() {
-        try {
-            const https = require('https');
-            return new Promise((resolve, reject) => {
-                const req = https.get('https://api.ipify.org?format=json', (res) => {
-                    let data = '';
-                    res.on('data', (chunk) => data += chunk);
-                    res.on('end', () => {
-                        try {
-                            const result = JSON.parse(data);
-                            resolve(result.ip);
-                        } catch (error) {
-                            reject(error);
-                        }
-                    });
-                });
-                req.on('error', reject);
-                req.setTimeout(5000, () => {
-                    req.destroy();
-                    reject(new Error('Timeout'));
-                });
-            });
-        } catch (error) {
-            console.warn('Impossibile ottenere IP pubblico:', error.message);
-            return this.getLocalIP();
-        }
-    }
-
-    async generatePublicDashboardLink(guildId, forceTunnel = false) {
-        try {
-            const port = this.webServer.getPort();
-
-            // Se richiesto tunnel o variabile ambiente impostata, usa tunnel gratuito
-            if (forceTunnel || process.env.FORCE_TUNNEL === 'true') {
-                const tunnelUrl = await this.webServer.createFreeTunnel(port);
-                return tunnelUrl;
-            }
-
-            // Prova prima a ottenere l'IP pubblico
-            const publicIP = await this.getPublicIP();
-
-            // Se abbiamo un IP pubblico valido, usalo
-            if (publicIP && publicIP !== this.getLocalIP()) {
-                return `http://${publicIP}:${port}`;
-            }
-
-            // Fallback a tunnel gratuito se IP pubblico non disponibile
-            const tunnelUrl = await this.webServer.createFreeTunnel(port);
-            return tunnelUrl;
-
-        } catch (error) {
-            console.warn('Errore generazione link pubblico:', error.message);
-            const localIP = this.getLocalIP();
-            const port = this.webServer.getPort();
-            return `http://${localIP}:${port}`;
-        }
-    }
-
-    async handleWebOn(message) {
-        try {
-            // Verifica permessi amministratore
-            if (!message.member.permissions.has('Administrator')) {
-                return message.reply('❌ Solo gli amministratori possono gestire il server web!');
-            }
-
-            // Inizializza il web server se non esiste
-            if (!this.webServer) {
-                await this.initializeWebServer();
-            }
-
-            // Avvia il server se non è già attivo
-            if (!this.webServer.isRunning()) {
-                await this.webServer.start();
-
-                // Genera link specifico per questo server
-                const guildId = message.guild.id;
-                const serverUrl = await this.generatePublicDashboardLink(guildId);
-
-                const { EmbedBuilder } = require('discord.js');
-                const embed = new EmbedBuilder()
-                    .setTitle('🌐 Server Web Attivato!')
-                    .setColor('#00ff00')
-                    .setDescription(`Il server web è stato avviato con successo per **${message.guild.name}**`)
-                    .addFields(
-                        {
-                            name: '🔗 Link Dashboard',
-                            value: `[Clicca qui per accedere](${serverUrl})`,
-                            inline: false
-                        },
-                        {
-                            name: '🛡️ Sicurezza',
-                            value: 'Questo link funziona solo per questo server specifico',
-                            inline: false
-                        },
-                        {
-                            name: '⚙️ Funzionalità',
-                            value: '• Controlli musicali completi\n• Gestione coda\n• Statistiche server\n• Controlli canali vocali',
-                            inline: false
-                        }
-                    )
-                    .setFooter({ text: 'Usa .weboff per spegnere il server web' })
-                    .setTimestamp();
-
-                await message.reply({ embeds: [embed] });
-             } else {
-                // Server già attivo
-                const guildId = message.guild.id;
-                const serverUrl = await this.generatePublicDashboardLink(guildId);
-                await message.reply(`🌐 Il server web è già attivo! Link: ${serverUrl}`);
-            }
-        } catch (error) {
-            logger.error('Errore avvio server web:', error);
-            await message.reply('❌ Errore durante l\'avvio del server web.');
-        }
-    }
-
-    async handleWebOff(message) {
-        try {
-            // Verifica permessi amministratore
-            if (!message.member.permissions.has('Administrator')) {
-                return message.reply('❌ Solo gli amministratori possono gestire il server web!');
-            }
-
-            if (this.webServer && this.webServer.isRunning()) {
-                await this.webServer.stop();
-                await message.reply('🔴 Server web spento con successo!');
-            } else {
-                await message.reply('❌ Il server web non è attivo.');
-            }
-        } catch (error) {
-            logger.error('Errore spegnimento server web:', error);
-            await message.reply('❌ Errore durante lo spegnimento del server web.');
-        }
-    }
-
-    async handleWebLink(message) {
-        try {
-            // Verifica se il server web è attivo
-            if (!this.webServer || !this.webServer.isRunning()) {
-                return message.reply('❌ Il server web non è attivo. Usa `.webon` per avviarlo.');
-            }
-
-            const guildId = message.guild.id;
-            const serverUrl = await this.generatePublicDashboardLink(guildId);
-
-            const { EmbedBuilder } = require('discord.js');
-            const embed = new EmbedBuilder()
-                .setColor('#00ff00')
-                .setTitle('🌐 Link Dashboard Web')
-                .setDescription(`Dashboard accessibile per **${message.guild.name}**`)
-                .addFields(
-                    { name: '🔗 Link Diretto', value: `[Clicca qui per aprire](${serverUrl})`, inline: false },
-                    { name: '📱 URL Completo', value: `\`${serverUrl}\``, inline: false },
-                    { name: '🌍 Tipo Accesso', value: serverUrl.includes(await this.getPublicIP()) ? 'Pubblico (Internet)' : 'Locale (Rete)', inline: true },
-                    { name: '🔧 Porta', value: `${this.webServer.getPort()}`, inline: true }
-                )
-                .setFooter({ text: 'Link generato automaticamente' })
-                .setTimestamp();
-
-            await message.reply({ embeds: [embed] });
-        } catch (error) {
-            logger.error('Errore generazione link web:', error);
-            await message.reply('❌ Errore durante la generazione del link.');
-        }
-    }
+    // Handler dei comandi web rimossi - server ora standalone
 
     async start() {
         try {
@@ -754,7 +548,7 @@ class DiscordMusicAIBot {
                 this.voiceManager.destroy();
             }
 
-            // Ferma il server web se inizializzato
+            // Ferma il server web standalone
             if (this.webServer && typeof this.webServer.stop === 'function') {
                 await this.webServer.stop();
             }

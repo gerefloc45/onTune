@@ -1,4 +1,4 @@
-# onTune - Discord Music Bot Ottimizzato 🚀
+# Tune - Discord Music Bot Ottimizzato 🚀
 
 Un bot Discord avanzato per la riproduzione musicale con ottimizzazioni delle performance, cache intelligente, dashboard web e monitoraggio in tempo reale.
 
@@ -68,7 +68,7 @@ Un bot Discord avanzato per la riproduzione musicale con ottimizzazioni delle pe
 ```bash
 # Clona il repository
 git clone <repository-url>
-cd onTune
+cd Tune
 
 # Installa le dipendenze
 npm install
@@ -323,7 +323,7 @@ Il bot utilizza un sistema di configurazione centralizzato con validazione autom
 ## 📁 Struttura Progetto
 
 ```
-onTune/
+Tune/
 ├── src/
 │   ├── bot.js                 # Bot principale
 │   ├── managers/

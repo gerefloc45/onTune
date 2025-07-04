@@ -161,9 +161,7 @@ class ConfigValidator {
                 clientSecret: process.env.SPOTIFY_CLIENT_SECRET || null,
                 enabled: !!(process.env.SPOTIFY_CLIENT_ID && process.env.SPOTIFY_CLIENT_SECRET)
             },
-            tunnel: {
-                ngrokAuthToken: process.env.NGROK_AUTH_TOKEN || null
-            }
+            // Tunnel configuration removed
         };
     }
 
@@ -205,9 +203,7 @@ class ConfigValidator {
         if (debugConfig.spotify.clientSecret) {
             debugConfig.spotify.clientSecret = '***';
         }
-        if (debugConfig.tunnel.ngrokAuthToken) {
-            debugConfig.tunnel.ngrokAuthToken = '***';
-        }
+        // Tunnel debug info removed
 
         return debugConfig;
     }

@@ -3,532 +3,410 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AionTune - Pannello di Controllo</title>
-    <script src="/socket.io/socket.io.js"></script>
+    <title>Tune - Bot Discord per Musica e AI</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link href="/style.css" rel="stylesheet">
-    <link href="/homepage.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #5865F2;
+            --secondary: #57F287;
+            --danger: #ED4245;
+            --warning: #FEE75C;
+            --background: #2C2F33;
+            --surface: #36393F;
+            --surface-light: #40444B;
+            --text: #FFFFFF;
+            --text-muted: #B9BBBE;
+            --border: #4F545C;
+        }
 
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, var(--background) 0%, #23272A 100%);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .hero {
+            text-align: center;
+            padding: 4rem 0;
+            background: linear-gradient(135deg, var(--primary) 0%, #4752C4 100%);
+            margin: -2rem -2rem 3rem -2rem;
+            border-radius: 0 0 2rem 2rem;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .hero .subtitle {
+            font-size: 1.25rem;
+            opacity: 0.9;
+            margin-bottom: 2rem;
+        }
+
+        .hero .logo {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+
+        .feature-card {
+            background: var(--surface);
+            border-radius: 1rem;
+            padding: 2rem;
+            border: 1px solid var(--border);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            color: var(--primary);
+            margin-bottom: 1rem;
+        }
+
+        .feature-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text);
+        }
+
+        .feature-description {
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        .commands-section {
+            background: var(--surface);
+            border-radius: 1rem;
+            padding: 2rem;
+            margin: 3rem 0;
+            border: 1px solid var(--border);
+        }
+
+        .commands-title {
+            font-size: 2rem;
+            font-weight: 600;
+            margin-bottom: 2rem;
+            text-align: center;
+            color: var(--primary);
+        }
+
+        .commands-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .command-item {
+            background: var(--surface-light);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            border-left: 4px solid var(--secondary);
+        }
+
+        .command-name {
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+            color: var(--secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .command-desc {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .invite-section {
+            text-align: center;
+            background: linear-gradient(135deg, var(--secondary) 0%, #4BC97A 100%);
+            border-radius: 1rem;
+            padding: 3rem;
+            margin: 3rem 0;
+            color: #000;
+        }
+
+        .invite-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .invite-btn {
+            display: inline-block;
+            background: #000;
+            color: #fff;
+            padding: 1rem 2rem;
+            border-radius: 0.5rem;
+            text-decoration: none;
+            font-weight: 600;
+            transition: transform 0.3s ease;
+            margin: 0 0.5rem;
+        }
+
+        .invite-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin: 3rem 0;
+        }
+
+        .stat-card {
+            background: var(--surface);
+            border-radius: 1rem;
+            padding: 2rem;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 2rem 0;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border);
+            margin-top: 3rem;
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .container {
+                padding: 1rem;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 <body>
-    <nav class="navbar">
-        <div class="navbar-content">
+    <div class="container">
+        <div class="hero">
             <div class="logo">
                 <i class="fas fa-music"></i>
-                <span>AionTune</span>
             </div>
-            <div class="status-badge">
-                <div class="status-dot" id="statusDot"></div>
-                <span id="statusText">Connessione...</span>
-            </div>
-            <div class="tunnel-info" id="tunnelInfo" style="display: none;">
-                <i class="fas fa-link"></i>
-                <a href="#" id="tunnelLink" target="_blank" style="color: var(--secondary); text-decoration: none; margin-left: 0.5rem;">Link Pubblico</a>
-                <button onclick="copyTunnelUrl()" style="background: none; border: none; color: var(--secondary); margin-left: 0.5rem; cursor: pointer;">
-                    <i class="fas fa-copy"></i>
-                </button>
-            </div>
-        </div>
-    </nav>
-
-    <div class="container">
-        <!-- Statistiche -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-value" id="guildCount">-</div>
-                <div class="stat-label">Server</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="userCount">-</div>
-                <div class="stat-label">Utenti</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="queueCount">-</div>
-                <div class="stat-label">Brani in Coda</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="uptime">-</div>
-                <div class="stat-label">Uptime</div>
-            </div>
+            <h1>Tune</h1>
+            <p class="subtitle">Il Bot Discord definitivo per Musica e Intelligenza Artificiale</p>
         </div>
 
-        <div class="dashboard-grid">
-            <!-- Controlli Musicali -->
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-icon">
-                        <i class="fas fa-music"></i>
-                    </div>
-                    <h3 class="card-title">Controlli Musicali</h3>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-music"></i>
                 </div>
+                <h3 class="feature-title">Musica di Alta Qualità</h3>
+                <p class="feature-description">
+                    Riproduci musica da YouTube, SoundCloud e Spotify con qualità cristallina.
+                    Supporta playlist, coda personalizzabile e controlli avanzati.
+                </p>
+            </div>
 
-                <div class="input-group">
-                    <label class="input-label">Server Discord</label>
-                    <select id="guildSelect" class="input-field">
-                        <option value="">Seleziona un server...</option>
-                    </select>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-robot"></i>
                 </div>
+                <h3 class="feature-title">Intelligenza Artificiale</h3>
+                <p class="feature-description">
+                    Chat AI integrata per rispondere alle tue domande, suggerire musica
+                    e aiutarti con qualsiasi cosa tu abbia bisogno.
+                </p>
+            </div>
 
-                <div class="input-group">
-                    <label class="input-label">Canzone o URL (YouTube, SoundCloud, Spotify)</label>
-                    <input type="text" id="songInput" class="input-field" placeholder="Inserisci nome canzone o URL...">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-microphone"></i>
                 </div>
+                <h3 class="feature-title">Controlli Vocali</h3>
+                <p class="feature-description">
+                    Gestione completa dei canali vocali con funzionalità text-to-speech
+                    e controlli avanzati per l'audio.
+                </p>
+            </div>
 
-                <div class="music-controls">
-                    <button class="btn btn-primary" onclick="playMusic()">
-                        <i class="fas fa-play"></i> Play
-                    </button>
-                    <button class="btn" onclick="pauseMusic()">
-                        <i class="fas fa-pause"></i> Pausa
-                    </button>
-                    <button class="btn" onclick="skipMusic()">
-                        <i class="fas fa-forward"></i> Skip
-                    </button>
-                    <button class="btn btn-danger" onclick="stopMusic()">
-                        <i class="fas fa-stop"></i> Stop
-                    </button>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-cogs"></i>
                 </div>
+                <h3 class="feature-title">Facile da Usare</h3>
+                <p class="feature-description">
+                    Comandi intuitivi, interfaccia user-friendly e configurazione semplice.
+                    Perfetto per server di qualsiasi dimensione.
+                </p>
+            </div>
 
-                <div class="volume-control">
-                    <i class="fas fa-volume-down"></i>
-                    <input type="range" id="volumeSlider" class="volume-slider" min="0" max="100" value="50">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-list"></i>
+                </div>
+                <h3 class="feature-title">Gestione Coda</h3>
+                <p class="feature-description">
+                    Coda musicale avanzata con shuffle, loop, skip e visualizzazione
+                    in tempo reale di tutti i brani in attesa.
+                </p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
                     <i class="fas fa-volume-up"></i>
-                    <span id="volumeValue">50%</span>
                 </div>
+                <h3 class="feature-title">Audio Perfetto</h3>
+                <p class="feature-description">
+                    Controllo volume preciso, equalizzatore e ottimizzazione automatica
+                    per la migliore esperienza audio possibile.
+                </p>
             </div>
+        </div>
 
-            <!-- Coda Musicale -->
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-icon">
-                        <i class="fas fa-list"></i>
-                    </div>
-                    <h3 class="card-title">Coda Musicale</h3>
+        <div class="commands-section">
+            <h2 class="commands-title">Comandi Principali</h2>
+            <div class="commands-grid">
+                <div class="command-item">
+                    <div class="command-name">.play [canzone/URL]</div>
+                    <div class="command-desc">Riproduci una canzone o playlist</div>
                 </div>
-                <div class="queue-container" id="queueContainer">
-                    <div style="text-align: center; color: var(--text-muted); padding: 2rem;">
-                        <i class="fas fa-music" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
-                        <p>Nessuna canzone in coda</p>
-                    </div>
+                <div class="command-item">
+                    <div class="command-name">.pause</div>
+                    <div class="command-desc">Metti in pausa la riproduzione</div>
+                </div>
+                <div class="command-item">
+                    <div class="command-name">.skip</div>
+                    <div class="command-desc">Salta alla canzone successiva</div>
+                </div>
+                <div class="command-item">
+                    <div class="command-name">.queue</div>
+                    <div class="command-desc">Mostra la coda musicale</div>
+                </div>
+                <div class="command-item">
+                    <div class="command-name">.volume [0-100]</div>
+                    <div class="command-desc">Imposta il volume</div>
+                </div>
+                <div class="command-item">
+                    <div class="command-name">.loop</div>
+                    <div class="command-desc">Attiva/disattiva loop canzone</div>
+                </div>
+                <div class="command-item">
+                    <div class="command-name">.shuffle</div>
+                    <div class="command-desc">Mescola la coda</div>
+                </div>
+                <div class="command-item">
+                    <div class="command-name">.ai [messaggio]</div>
+                    <div class="command-desc">Chatta con l'AI</div>
+                </div>
+                <div class="command-item">
+                    <div class="command-name">.join</div>
+                    <div class="command-desc">Entra nel canale vocale</div>
+                </div>
+                <div class="command-item">
+                    <div class="command-name">.leave</div>
+                    <div class="command-desc">Esci dal canale vocale</div>
+                </div>
+                <div class="command-item">
+                    <div class="command-name">.help</div>
+                    <div class="command-desc">Mostra tutti i comandi</div>
+                </div>
+                <div class="command-item">
+                    <div class="command-name">.nowplaying</div>
+                    <div class="command-desc">Mostra la canzone corrente</div>
                 </div>
             </div>
         </div>
 
-        <div class="dashboard-grid">
-            <!-- Chat AI -->
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-icon">
-                        <i class="fas fa-robot"></i>
-                    </div>
-                    <h3 class="card-title">Chat AI</h3>
-                </div>
-                <div class="chat-container" id="chatContainer">
-                    <div class="chat-message bot">
-                        <strong>AionTune AI:</strong> Ciao! Sono qui per aiutarti con la musica e rispondere alle tue domande. 🎵
-                    </div>
-                </div>
-                <div class="input-group">
-                    <input type="text" id="chatInput" class="input-field" placeholder="Scrivi un messaggio..." onkeypress="handleChatKeyPress(event)">
-                </div>
-                <button class="btn btn-primary" onclick="sendChatMessage()">
-                    <i class="fas fa-paper-plane"></i> Invia
-                </button>
-            </div>
+        <div class="invite-section">
+            <h2 class="invite-title">Aggiungi Tune al tuo Server!</h2>
+            <p style="margin-bottom: 2rem;">Porta la migliore esperienza musicale e AI nel tuo server Discord</p>
+            <a href="#" class="invite-btn">
+                <i class="fab fa-discord"></i> Invita Bot
+            </a>
+            <a href="#" class="invite-btn">
+                <i class="fas fa-life-ring"></i> Supporto
+            </a>
+        </div>
 
-            <!-- Controlli Vocali -->
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-icon">
-                        <i class="fas fa-microphone"></i>
-                    </div>
-                    <h3 class="card-title">Controlli Vocali</h3>
-                </div>
-
-                <div class="input-group">
-                    <label class="input-label">Canale Vocale</label>
-                    <select id="voiceChannelSelect" class="input-field">
-                        <option value="">Seleziona un canale...</option>
-                    </select>
-                </div>
-
-                <div class="music-controls">
-                    <button class="btn btn-success" onclick="joinVoice()">
-                        <i class="fas fa-sign-in-alt"></i> Entra
-                    </button>
-                    <button class="btn btn-danger" onclick="leaveVoice()">
-                        <i class="fas fa-sign-out-alt"></i> Esci
-                    </button>
-                </div>
-
-                <div class="input-group">
-                    <label class="input-label">Text-to-Speech</label>
-                    <input type="text" id="ttsInput" class="input-field" placeholder="Testo da far pronunciare al bot...">
-                </div>
-                <button class="btn btn-primary" onclick="speakText()">
-                    <i class="fas fa-volume-up"></i> Parla
-                </button>
-            </div>
+        <div class="footer">
+            <p>&copy; 2024 Tune - Bot Discord per Musica e AI</p>
+            <p>Sviluppato con ❤️ per la community Discord</p>
         </div>
     </div>
 
     <script>
-        const socket = io();
-        let currentGuild = null;
-        let isConnected = false;
+        // Animazione contatori (opzionale)
+        function animateCounters() {
+            const counters = document.querySelectorAll('.stat-value');
+            counters.forEach(counter => {
+                const target = parseInt(counter.textContent);
+                if (isNaN(target)) return;
 
-        // Connessione Socket.IO
-        socket.on('connect', () => {
-            isConnected = true;
-            updateConnectionStatus('Connesso', true);
-            loadGuilds();
-            showNotification('Connesso al bot!', 'success');
-        });
-
-        socket.on('disconnect', () => {
-            isConnected = false;
-            updateConnectionStatus('Disconnesso', false);
-            showNotification('Connessione persa!', 'error');
-        });
-
-        socket.on('statusUpdate', (data) => {
-            updateStats(data);
-        });
-
-        socket.on('queueUpdate', (data) => {
-            updateQueue(data);
-        });
-
-        socket.on('chatResponse', (data) => {
-            addChatMessage(data.message, 'bot');
-        });
-
-        socket.on('tunnel-url', (data) => {
-            updateTunnelInfo(data);
-        });
-
-        // Funzioni UI
-        function updateConnectionStatus(text, connected) {
-            document.getElementById('statusText').textContent = text;
-            const dot = document.getElementById('statusDot');
-            dot.style.background = connected ? 'var(--secondary)' : 'var(--danger)';
-        }
-
-        function updateStats(data) {
-            document.getElementById('guildCount').textContent = data.guilds || '-';
-            document.getElementById('userCount').textContent = data.users || '-';
-            document.getElementById('queueCount').textContent = data.queueSize || '0';
-            document.getElementById('uptime').textContent = formatUptime(data.uptime || 0);
-        }
-
-        function formatUptime(seconds) {
-            const hours = Math.floor(seconds / 3600);
-            const minutes = Math.floor((seconds % 3600) / 60);
-            return `${hours}h ${minutes}m`;
-        }
-
-        function loadGuilds() {
-            fetch('/api/guilds')
-                .then(response => response.json())
-                .then(data => {
-                    const select = document.getElementById('guildSelect');
-                    select.innerHTML = '<option value="">Seleziona un server...</option>';
-                    
-                    if (data.success && data.data) {
-                        data.data.forEach(guild => {
-                            const option = document.createElement('option');
-                            option.value = guild.id;
-                            option.textContent = `${guild.name} (${guild.memberCount} membri)`;
-                            select.appendChild(option);
-                        });
+                let current = 0;
+                const increment = target / 50;
+                const timer = setInterval(() => {
+                    current += increment;
+                    if (current >= target) {
+                        counter.textContent = target;
+                        clearInterval(timer);
+                    } else {
+                        counter.textContent = Math.floor(current);
                     }
-                })
-                .catch(error => {
-                    console.error('Errore nel caricamento dei server:', error);
-                    showNotification('Errore nel caricamento dei server', 'error');
-                });
-        }
-
-        function updateQueue(data) {
-            const container = document.getElementById('queueContainer');
-            
-            if (!data.songs || data.songs.length === 0) {
-                container.innerHTML = `
-                    <div style="text-align: center; color: var(--text-muted); padding: 2rem;">
-                        <i class="fas fa-music" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
-                        <p>Nessuna canzone in coda</p>
-                    </div>
-                `;
-                return;
-            }
-
-            let html = '';
-            
-            // Canzone corrente
-            if (data.currentSong) {
-                html += createQueueItem(data.currentSong, true);
-            }
-            
-            // Coda
-            data.songs.forEach((song, index) => {
-                html += createQueueItem(song, false, index + 1);
+                }, 20);
             });
-            
-            container.innerHTML = html;
         }
 
-        function createQueueItem(song, isCurrent, position = null) {
-            const positionText = isCurrent ? 'In riproduzione' : `#${position}`;
-            const currentClass = isCurrent ? 'current' : '';
-            
-            return `
-                <div class="queue-item ${currentClass}">
-                    <img src="${song.thumbnail || '/placeholder.jpg'}" alt="Thumbnail" class="song-thumbnail" onerror="this.style.display='none'">
-                    <div class="song-info">
-                        <div class="song-title">${song.title}</div>
-                        <div class="song-meta">
-                            <span>${positionText}</span>
-                            <span>${song.duration}</span>
-                            <span class="platform-badge">${song.platform || '🎥 YouTube'}</span>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function addChatMessage(message, sender) {
-            const container = document.getElementById('chatContainer');
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `chat-message ${sender}`;
-            
-            const senderName = sender === 'user' ? 'Tu' : 'AionTune AI';
-            messageDiv.innerHTML = `<strong>${senderName}:</strong> ${message}`;
-            
-            container.appendChild(messageDiv);
-            container.scrollTop = container.scrollHeight;
-        }
-
-        function showNotification(message, type = 'success') {
-            const notification = document.createElement('div');
-            notification.className = `notification ${type}`;
-            notification.textContent = message;
-            
-            document.body.appendChild(notification);
-            
-            setTimeout(() => notification.classList.add('show'), 100);
-            
-            setTimeout(() => {
-                notification.classList.remove('show');
-                setTimeout(() => document.body.removeChild(notification), 300);
-            }, 3000);
-        }
-
-        // Controlli Musicali
-        function playMusic() {
-            const guild = document.getElementById('guildSelect').value;
-            const song = document.getElementById('songInput').value;
-            
-            if (!guild || !song) {
-                showNotification('Seleziona un server e inserisci una canzone!', 'error');
-                return;
-            }
-            
-            socket.emit('playMusic', { guildId: guild, query: song });
-            document.getElementById('songInput').value = '';
-            showNotification('Comando inviato!', 'success');
-        }
-
-        function pauseMusic() {
-            const guild = document.getElementById('guildSelect').value;
-            if (!guild) {
-                showNotification('Seleziona un server!', 'error');
-                return;
-            }
-            socket.emit('pauseMusic', { guildId: guild });
-        }
-
-        function skipMusic() {
-            const guild = document.getElementById('guildSelect').value;
-            if (!guild) {
-                showNotification('Seleziona un server!', 'error');
-                return;
-            }
-            socket.emit('skipMusic', { guildId: guild });
-        }
-
-        function stopMusic() {
-            const guild = document.getElementById('guildSelect').value;
-            if (!guild) {
-                showNotification('Seleziona un server!', 'error');
-                return;
-            }
-            socket.emit('stopMusic', { guildId: guild });
-        }
-
-        // Volume
-        document.getElementById('volumeSlider').addEventListener('input', function() {
-            const volume = this.value;
-            document.getElementById('volumeValue').textContent = volume + '%';
-            
-            const guild = document.getElementById('guildSelect').value;
-            if (guild) {
-                socket.emit('setVolume', { guildId: guild, volume: volume / 100 });
-            }
-        });
-
-        // Chat AI
-        function sendChatMessage() {
-            const input = document.getElementById('chatInput');
-            const message = input.value.trim();
-            
-            if (!message) return;
-            
-            addChatMessage(message, 'user');
-            socket.emit('chatMessage', { message });
-            input.value = '';
-        }
-
-        function handleChatKeyPress(event) {
-            if (event.key === 'Enter') {
-                sendChatMessage();
-            }
-        }
-
-        // Controlli Vocali
-        function joinVoice() {
-            const guild = document.getElementById('guildSelect').value;
-            const channel = document.getElementById('voiceChannelSelect').value;
-            
-            if (!guild || !channel) {
-                showNotification('Seleziona server e canale vocale!', 'error');
-                return;
-            }
-            
-            socket.emit('joinVoice', { guildId: guild, channelId: channel });
-        }
-
-        function leaveVoice() {
-            const guild = document.getElementById('guildSelect').value;
-            if (!guild) {
-                showNotification('Seleziona un server!', 'error');
-                return;
-            }
-            socket.emit('leaveVoice', { guildId: guild });
-        }
-
-        function speakText() {
-            const guild = document.getElementById('guildSelect').value;
-            const text = document.getElementById('ttsInput').value;
-            
-            if (!guild || !text) {
-                showNotification('Seleziona server e inserisci testo!', 'error');
-                return;
-            }
-            
-            socket.emit('speakText', { guildId: guild, text });
-            document.getElementById('ttsInput').value = '';
-        }
-
-        // Caricamento canali vocali quando cambia il server
-        document.getElementById('guildSelect').addEventListener('change', function() {
-            const guildId = this.value;
-            currentGuild = guildId;
-            
-            if (guildId) {
-                loadVoiceChannels(guildId);
-                loadQueue(guildId);
-            }
-        });
-
-        function loadVoiceChannels(guildId) {
-            fetch(`/api/guilds/${guildId}/voice-channels`)
-                .then(response => response.json())
-                .then(data => {
-                    const select = document.getElementById('voiceChannelSelect');
-                    select.innerHTML = '<option value="">Seleziona un canale...</option>';
-                    
-                    if (data.success && data.data) {
-                        data.data.forEach(channel => {
-                            const option = document.createElement('option');
-                            option.value = channel.id;
-                            option.textContent = channel.name;
-                            select.appendChild(option);
-                        });
-                    }
-                })
-                .catch(error => console.error('Errore nel caricamento dei canali:', error));
-        }
-
-        function loadQueue(guildId) {
-            fetch(`/api/guilds/${guildId}/queue`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        updateQueue(data.data);
-                    }
-                })
-                .catch(error => console.error('Errore nel caricamento della coda:', error));
-        }
-
-        // Aggiornamento automatico dello stato
-        setInterval(() => {
-            if (isConnected) {
-                fetch('/api/status')
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            updateStats(data.data);
-                        }
-                    })
-                    .catch(error => console.error('Errore nell\'aggiornamento dello stato:', error));
-            }
-        }, 5000);
-
-        // Gestione Tunnel URL
-        function updateTunnelInfo(data) {
-            const tunnelInfo = document.getElementById('tunnelInfo');
-            const tunnelLink = document.getElementById('tunnelLink');
-            
-            if (data.url && data.isPublic) {
-                tunnelLink.href = data.url;
-                tunnelLink.textContent = data.url.replace('https://', '').replace('http://', '');
-                tunnelInfo.style.display = 'flex';
-                tunnelInfo.style.alignItems = 'center';
-                
-                // Salva l'URL per la funzione di copia
-                window.currentTunnelUrl = data.url;
-                
-                showNotification('Link pubblico disponibile!', 'success');
-            } else {
-                tunnelInfo.style.display = 'none';
-            }
-        }
-        
-        function copyTunnelUrl() {
-            if (window.currentTunnelUrl) {
-                navigator.clipboard.writeText(window.currentTunnelUrl).then(() => {
-                    showNotification('Link copiato negli appunti!', 'success');
-                }).catch(() => {
-                    // Fallback per browser più vecchi
-                    const textArea = document.createElement('textarea');
-                    textArea.value = window.currentTunnelUrl;
-                    document.body.appendChild(textArea);
-                    textArea.select();
-                    document.execCommand('copy');
-                    document.body.removeChild(textArea);
-                    showNotification('Link copiato negli appunti!', 'success');
-                });
-            }
-        }
-
-        // Inizializzazione
+        // Avvia animazioni quando la pagina è caricata
         document.addEventListener('DOMContentLoaded', () => {
-            // Carica i dati iniziali se già connesso
-            if (isConnected) {
-                loadGuilds();
-            }
-        });    </script>
-    <script src="/script.js"></script>
+            setTimeout(animateCounters, 500);
+        });
+    </script>
 </body>
 </html>

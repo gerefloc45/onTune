@@ -1,4 +1,4 @@
-/* AionTune Dashboard Styles */
+/* TUNE Dashboard Styles */
 
 :root {
     --primary: #5865f2;
@@ -88,46 +88,7 @@ body {
     animation: pulse 2s infinite;
 }
 
-.tunnel-info {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 16px;
-    border-radius: 20px;
-    background: var(--bg-tertiary);
-    font-size: 0.9rem;
-    font-weight: 500;
-    border: 1px solid var(--secondary);
-}
-
-.tunnel-info i {
-    color: var(--secondary);
-}
-
-.tunnel-info a {
-    color: var(--secondary) !important;
-    text-decoration: none !important;
-    font-weight: 600;
-    transition: opacity 0.3s ease;
-}
-
-.tunnel-info a:hover {
-    opacity: 0.8;
-}
-
-.tunnel-info button {
-    background: none !important;
-    border: none !important;
-    color: var(--secondary) !important;
-    cursor: pointer;
-    padding: 4px;
-    border-radius: 4px;
-    transition: background-color 0.3s ease;
-}
-
-.tunnel-info button:hover {
-    background-color: rgba(87, 242, 135, 0.1) !important;
-}
+/* Tunnel styles removed */
 
 @keyframes pulse {
     0%, 100% { opacity: 1; transform: scale(1); }

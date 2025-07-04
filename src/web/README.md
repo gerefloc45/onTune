@@ -1,10 +1,10 @@
-# onTune Web API Documentation
+# TUNE Web API Documentation
 
-Documentazione completa delle API REST del bot onTune.
+Documentazione completa delle API REST del bot TUNE.
 
 ## 🌐 Panoramica
 
-Il server web di onTune espone diverse API REST per il monitoraggio, controllo e gestione del bot. Tutte le API restituiscono risposte in formato JSON.
+Il server web di TUNE espone diverse API REST per il monitoraggio, controllo e gestione del bot. Tutte le API restituiscono risposte in formato JSON.
 
 ### Base URL
 ```
